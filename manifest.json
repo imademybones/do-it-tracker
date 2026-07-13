@@ -2,7 +2,7 @@
   "name": "Do It",
   "short_name": "Do It",
   "description": "Personal accountability tracker",
-  "start_url": "./accountability-tracker-v3.html",
+  "start_url": "./accountability-tracker-v4.html",
   "scope": "./",
   "display": "standalone",
   "background_color": "#1B1D21",
