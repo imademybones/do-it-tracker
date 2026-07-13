@@ -1,0 +1,1484 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Do It</title>
+<link rel="manifest" href="manifest.json">
+<link rel="apple-touch-icon" href="icon-192.png">
+<link rel="icon" href="icon-192.png">
+<meta name="theme-color" content="#1B1D21">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Barlow+Semi+Condensed:wght@600;700&family=Inter:wght@400;500;600&family=IBM+Plex+Mono:wght@500;600&display=swap" rel="stylesheet">
+<script src="https://accounts.google.com/gsi/client" async defer></script>
+<style>
+  :root{
+    --bg:#1B1D21; --panel:#232629; --panel-2:#2A2E32; --border:#33373C;
+    --text:#EDEAE3; --text-dim:#9A9EA5; --text-faint:#5E6267;
+    --amber:#C98A3A; --red:#C1483C; --green:#5E8C61;
+    --cat-gym:#C98A3A; --cat-chores:#4C8577; --cat-dog:#8C7A5E;
+    --cat-wife:#B0463C; --cat-study:#5C7A99; --cat-other:#7A7E85;
+    --radius:10px;
+  }
+  *{box-sizing:border-box;}
+  body{margin:0;background:var(--bg);color:var(--text);font-family:'Inter',sans-serif;
+    -webkit-font-smoothing:antialiased; padding-bottom:100px;}
+  .display{font-family:'Barlow Semi Condensed',sans-serif;}
+  .mono{font-family:'IBM Plex Mono',monospace;}
+  a{color:inherit;}
+  button{font-family:inherit;cursor:pointer;}
+  ::selection{background:var(--amber);color:#1B1D21;}
+
+  /* ---------- Layout shell ---------- */
+  #setup-screen{max-width:480px;margin:0 auto;padding:32px 20px 60px;}
+  #setup-screen h1{font-family:'Barlow Semi Condensed';font-weight:700;font-size:28px;letter-spacing:0.02em;margin:0 0 4px;}
+  #setup-screen p{color:var(--text-dim);line-height:1.5;font-size:14px;}
+  .field{margin-bottom:14px;}
+  .field label{display:block;font-size:12px;text-transform:uppercase;letter-spacing:0.08em;color:var(--text-dim);margin-bottom:6px;}
+  .field input, .field select, .field textarea{
+    width:100%;background:var(--panel);border:1px solid var(--border);color:var(--text);
+    padding:10px 12px;border-radius:8px;font-size:15px;font-family:inherit;
+  }
+  .field input:focus, .field select:focus, .field textarea:focus{outline:none;border-color:var(--amber);}
+  .btn{
+    display:inline-flex;align-items:center;justify-content:center;gap:6px;
+    background:var(--amber);color:#1B1D21;border:none;padding:11px 18px;border-radius:8px;
+    font-weight:600;font-size:14px;letter-spacing:0.01em;
+  }
+  .btn:active{transform:translateY(1px);}
+  .btn.secondary{background:transparent;border:1px solid var(--border);color:var(--text);}
+  .btn.ghost{background:transparent;border:none;color:var(--text-dim);padding:8px;}
+  .btn.danger{background:var(--red);color:#fff;}
+  .btn:disabled{opacity:0.4;}
+  .setup-steps{background:var(--panel);border:1px solid var(--border);border-radius:var(--radius);padding:16px;margin:18px 0;}
+  .setup-steps ol{margin:0;padding-left:18px;font-size:13.5px;line-height:1.7;color:var(--text-dim);}
+  .setup-steps code{background:var(--panel-2);padding:1px 5px;border-radius:4px;font-size:12.5px;}
+  .error-banner{background:rgba(193,72,60,0.15);border:1px solid var(--red);color:#E8A29B;
+    padding:10px 14px;border-radius:8px;font-size:13px;margin-bottom:14px;}
+
+  /* ---------- App frame ---------- */
+  #app{display:none;}
+  header.topbar{
+    position:sticky;top:0;z-index:5;background:rgba(27,29,33,0.92);backdrop-filter:blur(6px);
+    display:flex;align-items:center;justify-content:space-between;
+    padding:16px 18px 12px;border-bottom:1px solid var(--border);
+  }
+  .topbar .datestamp{font-family:'Barlow Semi Condensed';font-weight:700;font-size:22px;letter-spacing:0.01em;}
+  .topbar .datestamp .dow{color:var(--amber);}
+  .topbar .sub{color:var(--text-dim);font-size:12px;margin-top:1px;}
+  .icon-btn{background:none;border:1px solid var(--border);color:var(--text-dim);width:38px;height:38px;
+    border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:16px;}
+
+  /* Day rail — signature element */
+  #rail{display:flex;gap:6px;padding:12px 16px 4px;overflow-x:auto;}
+  .rail-day{
+    flex:1;min-width:40px;display:flex;flex-direction:column;align-items:center;gap:6px;
+    padding:8px 4px;border-radius:8px;border:1px solid transparent;background:none;color:var(--text-dim);
+  }
+  .rail-day .lbl{font-size:10.5px;text-transform:uppercase;letter-spacing:0.06em;}
+  .rail-day .ring{width:26px;height:26px;border-radius:50%;display:flex;align-items:center;justify-content:center;
+    font-family:'IBM Plex Mono';font-size:10px;font-weight:600;position:relative;}
+  .rail-day.today{border-color:var(--border);background:var(--panel);color:var(--text);}
+  .rail-day.selected{border-color:var(--amber);}
+  .ring svg{position:absolute;top:0;left:0;transform:rotate(-90deg);}
+  .ring circle.bg{stroke:var(--border);}
+  .ring circle.fg{stroke:var(--amber);stroke-linecap:round;transition:stroke-dashoffset .3s;}
+  .rail-day.future .ring{opacity:0.5;}
+
+  main{max-width:640px;margin:0 auto;padding:8px 16px 0;}
+
+  /* Quick capture */
+  .capture-row{display:flex;gap:8px;margin:14px 0 18px;}
+  .capture-row button.wife{
+    flex:1;background:var(--panel);border:1px solid var(--border);color:var(--text);
+    padding:13px 14px;border-radius:10px;font-size:14px;font-weight:500;text-align:left;
+    display:flex;align-items:center;gap:10px;
+  }
+  .capture-row button.wife .dot{width:8px;height:8px;border-radius:50%;background:var(--cat-wife);flex-shrink:0;}
+  .capture-row button.plus{
+    width:48px;background:var(--amber);border:none;color:#1B1D21;border-radius:10px;font-size:20px;font-weight:700;
+  }
+
+  /* Section headers */
+  .section-label{font-size:11px;text-transform:uppercase;letter-spacing:0.1em;color:var(--text-faint);
+    margin:20px 0 8px;display:flex;align-items:center;gap:8px;}
+  .section-label .count{color:var(--text-dim);}
+
+  /* Task rows */
+  .task{
+    display:flex;align-items:center;gap:12px;background:var(--panel);border:1px solid var(--border);
+    border-radius:10px;padding:12px 14px;margin-bottom:8px;
+  }
+  .task.overdue{border-color:var(--red);}
+  .task.done, .task.skipped{opacity:0.5;}
+  .task .check{
+    width:24px;height:24px;border-radius:50%;border:2px solid var(--border);flex-shrink:0;
+    display:flex;align-items:center;justify-content:center;background:none;color:transparent;font-size:13px;
+  }
+  .task.done .check{background:var(--green);border-color:var(--green);color:#0f1a10;}
+  .task.skipped .check{background:none;border-color:var(--text-faint);color:var(--text-faint);}
+  .task-body{flex:1;min-width:0;cursor:pointer;}
+  .task-title{font-size:14.5px;font-weight:500;}
+  .task.done .task-title, .task.skipped .task-title{text-decoration:line-through;}
+  .task-meta{display:flex;align-items:center;gap:8px;margin-top:3px;flex-wrap:wrap;}
+  .cat-pill{font-size:10px;text-transform:uppercase;letter-spacing:0.06em;padding:2px 7px;border-radius:5px;font-weight:600;}
+  .task-time{font-family:'IBM Plex Mono';font-size:11px;color:var(--text-dim);}
+  .streak{font-family:'IBM Plex Mono';font-size:11px;color:var(--amber);}
+  .task-actions{display:flex;gap:4px;flex-shrink:0;}
+  .task-actions button{background:none;border:none;color:var(--text-faint);font-size:11px;padding:6px;text-transform:uppercase;letter-spacing:0.05em;}
+  .task-actions button:hover{color:var(--text-dim);}
+
+  .empty-state{color:var(--text-dim);font-size:13.5px;padding:18px 4px;line-height:1.6;}
+
+  /* FAB */
+  .fab{
+    position:fixed;bottom:22px;right:18px;width:56px;height:56px;border-radius:50%;
+    background:var(--amber);border:none;color:#1B1D21;font-size:26px;font-weight:700;
+    box-shadow:0 6px 20px rgba(0,0,0,0.4);z-index:8;
+  }
+
+  /* Modal */
+  .modal-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,0.6);z-index:20;
+    align-items:flex-end;justify-content:center;}
+  .modal-overlay.open{display:flex;}
+  .modal{background:var(--panel);width:100%;max-width:480px;border-radius:16px 16px 0 0;
+    padding:20px 18px 28px;max-height:88vh;overflow-y:auto;}
+  .modal h2{font-family:'Barlow Semi Condensed';font-size:19px;font-weight:700;margin:0 0 14px;}
+  .modal-close-row{display:flex;justify-content:flex-end;margin-bottom:-6px;}
+  .chip-row{display:flex;flex-wrap:wrap;gap:6px;}
+  .chip{background:var(--panel-2);border:1px solid var(--border);color:var(--text-dim);
+    padding:6px 12px;border-radius:20px;font-size:12.5px;}
+  .chip.active{background:var(--amber);color:#1B1D21;border-color:var(--amber);font-weight:600;}
+  .day-chip-row{display:flex;gap:5px;}
+  .day-chip{flex:1;background:var(--panel-2);border:1px solid var(--border);color:var(--text-dim);
+    padding:8px 0;border-radius:7px;font-size:11.5px;text-align:center;}
+  .day-chip.active{background:var(--amber);color:#1B1D21;border-color:var(--amber);font-weight:600;}
+  .modal-actions{display:flex;gap:10px;margin-top:18px;}
+  .modal-actions .btn{flex:1;}
+
+  .template-row{display:flex;align-items:center;justify-content:space-between;background:var(--panel-2);
+    border-radius:8px;padding:10px 12px;margin-bottom:8px;}
+  .template-row .t-name{font-size:13.5px;}
+  .template-row .t-meta{color:var(--text-dim);font-size:11px;margin-top:2px;}
+  .template-row button{background:none;border:none;color:var(--text-faint);font-size:12px;}
+
+  .toggle-row{display:flex;align-items:center;justify-content:space-between;padding:10px 0;border-bottom:1px solid var(--border);}
+  .toggle-row:last-child{border-bottom:none;}
+  .switch{width:42px;height:24px;border-radius:14px;background:var(--panel-2);border:1px solid var(--border);position:relative;flex-shrink:0;}
+  .switch .knob{width:18px;height:18px;border-radius:50%;background:var(--text-dim);position:absolute;top:2px;left:2px;transition:.2s;}
+  .switch.on{background:rgba(201,138,58,0.25);border-color:var(--amber);}
+  .switch.on .knob{background:var(--amber);left:20px;}
+
+  .info-note{font-size:12px;color:var(--text-faint);line-height:1.6;margin-top:10px;}
+
+  .toast{position:fixed;bottom:90px;left:50%;transform:translateX(-50%);background:var(--panel-2);
+    border:1px solid var(--border);color:var(--text);padding:10px 18px;border-radius:20px;font-size:13px;
+    z-index:30;display:none;}
+</style>
+</head>
+<body>
+
+<!-- ============ SETUP SCREEN ============ -->
+<div id="setup-screen">
+  <h1>Do It</h1>
+  <p>A direct accountability tracker. Gym, chores, the dog, and whatever your wife just asked you to do — all in one list you can't quietly ignore.</p>
+
+  <div id="setup-error"></div>
+
+  <div class="setup-steps">
+    <ol>
+      <li>Create an Airtable base with two tables: <code>Templates</code> and <code>Log</code>.</li>
+      <li><b>Templates</b> fields: <code>Title</code> (text), <code>Category</code> (single select), <code>Days</code> (multiple select: Mon/Tue/Wed/Thu/Fri/Sat/Sun), <code>Time</code> (text), <code>Active</code> (checkbox).</li>
+      <li><b>Log</b> fields: <code>Title</code> (text), <code>Category</code> (text), <code>Type</code> (text), <code>TemplateId</code> (text), <code>Date</code> (text), <code>Status</code> (text), <code>CompletedAt</code> (text), <code>Notes</code> (text), <code>CalendarEventId</code> (text).</li>
+      <li>Create a Personal Access Token (airtable.com/create/tokens) scoped to that base with <code>data.records:read</code> and <code>data.records:write</code>.</li>
+      <li>Paste the base ID and token below. This app creates and manages the Log rows for you — you don't need to touch them manually.</li>
+    </ol>
+  </div>
+
+  <div class="field">
+    <label>Airtable Base ID</label>
+    <input id="input-base" placeholder="appXXXXXXXXXXXXXX">
+  </div>
+  <div class="field">
+    <label>Personal Access Token</label>
+    <input id="input-pat" type="password" placeholder="patXXXXXXXXXXXXXX">
+  </div>
+  <button class="btn" style="width:100%" onclick="saveSetup()">Connect</button>
+</div>
+
+<!-- ============ MAIN APP ============ -->
+<div id="app">
+  <header class="topbar">
+    <div>
+      <div class="datestamp"><span class="dow" id="hdr-dow"></span> <span id="hdr-date"></span></div>
+      <div class="sub" id="hdr-sub"></div>
+    </div>
+    <div style="display:flex;gap:8px">
+      <button class="icon-btn" onclick="manualRefresh()" title="Refresh">&#8635;</button>
+      <button class="icon-btn" onclick="openStats()" title="Stats">&#9636;</button>
+      <button class="icon-btn" onclick="openSettings()">&#9881;</button>
+    </div>
+  </header>
+
+  <div style="display:flex;align-items:center;gap:2px;padding:0 8px;">
+    <button class="icon-btn" style="width:30px;height:30px;border:none;font-size:14px" onclick="shiftWeek(-1)">&#8249;</button>
+    <div id="rail" style="flex:1"></div>
+    <button class="icon-btn" style="width:30px;height:30px;border:none;font-size:14px" onclick="shiftWeek(1)">&#8250;</button>
+  </div>
+  <div id="week-label" style="text-align:center;font-size:11px;color:var(--text-faint);padding-bottom:2px;"></div>
+
+  <main>
+    <div class="capture-row">
+      <button class="wife" onclick="openCapture('Wife Ask')"><span class="dot"></span> Wife asked me to&hellip;</button>
+      <button class="plus" onclick="openCapture('Other')">+</button>
+    </div>
+
+    <div id="task-list"></div>
+  </main>
+</div>
+
+<button class="fab" id="fab" style="display:none" onclick="openCapture('Other')">+</button>
+<div class="toast" id="toast"></div>
+
+<!-- ============ QUICK CAPTURE MODAL ============ -->
+<div class="modal-overlay" id="capture-modal">
+  <div class="modal">
+    <div class="modal-close-row"><button class="btn ghost" onclick="closeModal('capture-modal')">Close</button></div>
+    <h2 id="capture-title">Add a task</h2>
+    <div class="field">
+      <label>What needs doing</label>
+      <input id="capture-text" placeholder="e.g. Take the bins out">
+    </div>
+    <div class="field">
+      <label>Category</label>
+      <div class="chip-row" id="capture-cats"></div>
+    </div>
+    <div class="field">
+      <label>Type</label>
+      <div class="chip-row" id="capture-freq"></div>
+    </div>
+    <div id="capture-oneoff-fields">
+      <div class="field">
+        <label>Due</label>
+        <div class="chip-row" id="capture-due"></div>
+        <input id="capture-date" type="date" style="margin-top:8px">
+      </div>
+    </div>
+    <div id="capture-recurring-fields" style="display:none">
+      <div class="field">
+        <label>Days</label>
+        <div class="day-chip-row" id="capture-days"></div>
+      </div>
+    </div>
+    <div class="field">
+      <label>Time (optional — set this to get a Calendar alert)</label>
+      <input id="capture-time" type="time">
+    </div>
+    <div class="modal-actions">
+      <button class="btn" style="width:100%" onclick="submitCapture()">Add to the list</button>
+    </div>
+  </div>
+</div>
+
+<!-- ============ EDIT TASK MODAL ============ -->
+<div class="modal-overlay" id="edit-modal">
+  <div class="modal">
+    <div class="modal-close-row"><button class="btn ghost" onclick="closeModal('edit-modal')">Close</button></div>
+    <h2>Edit task</h2>
+    <div class="field">
+      <label>Title</label>
+      <input id="edit-text">
+    </div>
+    <div class="field">
+      <label>Category</label>
+      <div class="chip-row" id="edit-cats"></div>
+    </div>
+    <div class="field">
+      <label>Date</label>
+      <input id="edit-date" type="date">
+    </div>
+    <div class="field">
+      <label>Time (optional)</label>
+      <input id="edit-time" type="time">
+    </div>
+    <div class="modal-actions">
+      <button class="btn danger" onclick="deleteEditTask()">Delete</button>
+      <button class="btn" onclick="submitEditTask()">Save</button>
+    </div>
+  </div>
+</div>
+
+<!-- ============ STATS MODAL ============ -->
+<div class="modal-overlay" id="stats-modal">
+  <div class="modal">
+    <div class="modal-close-row"><button class="btn ghost" onclick="closeModal('stats-modal')">Close</button></div>
+    <h2>Last 30 days</h2>
+    <div id="stats-body"></div>
+  </div>
+</div>
+
+<!-- ============ SETTINGS MODAL ============ -->
+<div class="modal-overlay" id="settings-modal">
+  <div class="modal">
+    <div class="modal-close-row"><button class="btn ghost" onclick="closeModal('settings-modal')">Close</button></div>
+    <h2>Settings</h2>
+
+    <div class="section-label">Reminders</div>
+    <div class="toggle-row">
+      <div>
+        <div>Enable notifications</div>
+        <div class="info-note" style="margin-top:2px">Fires while this is installed and open or running in the background. It can't wake a closed browser tab — treat it as a nudge, not an alarm clock.</div>
+      </div>
+      <div class="switch" id="notif-switch" onclick="toggleNotifications()"><div class="knob"></div></div>
+    </div>
+    <div class="field" style="margin-top:12px">
+      <label>Daily digest time</label>
+      <input id="digest-time" type="time">
+    </div>
+
+    <div class="section-label">Recurring tasks</div>
+    <div id="template-list"></div>
+    <button class="btn secondary" style="width:100%;margin-top:6px" onclick="openTemplateForm()">+ Add recurring task</button>
+
+    <div class="section-label">Categories</div>
+    <div class="info-note" style="margin-bottom:8px">The six defaults are fixed; add your own below. Custom categories are saved on this device.</div>
+    <div class="chip-row" id="custom-cat-list" style="margin-bottom:8px"></div>
+    <div style="display:flex;gap:8px">
+      <input id="new-cat-name" placeholder="e.g. Coaching" style="flex:1;background:var(--panel-2);border:1px solid var(--border);color:var(--text);padding:9px 12px;border-radius:8px;font-size:14px;font-family:inherit">
+      <button class="btn secondary" onclick="addCustomCategory()">Add</button>
+    </div>
+
+    <div class="section-label">Google Calendar</div>
+    <div class="info-note" style="margin-bottom:8px">Only tasks with a time set get synced. An event is created with a pop-up alert at that exact time — the kind of reminder that fires even if this app isn't open — and it's removed automatically once you mark the task done or skipped.</div>
+    <div class="field">
+      <label>Google OAuth Client ID</label>
+      <input id="gcal-client-id" placeholder="xxxxx.apps.googleusercontent.com">
+    </div>
+    <button class="btn secondary" style="width:100%" onclick="connectGoogleCalendar()">Connect Google Calendar</button>
+    <div class="info-note" id="gcal-status" style="margin-top:8px"></div>
+
+    <div class="section-label">Airtable connection</div>
+    <button class="btn secondary" style="width:100%" onclick="disconnectSetup()">Disconnect / change base</button>
+  </div>
+</div>
+
+<!-- ============ TEMPLATE FORM MODAL ============ -->
+<div class="modal-overlay" id="template-modal">
+  <div class="modal">
+    <div class="modal-close-row"><button class="btn ghost" onclick="closeModal('template-modal')">Close</button></div>
+    <h2>Recurring task</h2>
+    <div class="field">
+      <label>Title</label>
+      <input id="tpl-title" placeholder="e.g. Gym">
+    </div>
+    <div class="field">
+      <label>Category</label>
+      <div class="chip-row" id="tpl-cats"></div>
+    </div>
+    <div class="field">
+      <label>Days</label>
+      <div class="day-chip-row" id="tpl-days"></div>
+    </div>
+    <div class="field">
+      <label>Time (optional, 24hr)</label>
+      <input id="tpl-time" type="time">
+    </div>
+    <div class="modal-actions" id="tpl-manage-row" style="display:none">
+      <button class="btn secondary" id="tpl-pause-btn" onclick="togglePauseTemplate()">Pause</button>
+      <button class="btn danger" onclick="deleteTemplate()">Delete</button>
+    </div>
+    <div class="modal-actions">
+      <button class="btn" style="width:100%" onclick="submitTemplate()">Save</button>
+    </div>
+  </div>
+</div>
+
+<script>
+/* ============================================================
+   CONFIG & CONSTANTS
+   ============================================================ */
+const DEFAULT_CATEGORIES = [
+  {key:'Gym', color:'var(--cat-gym)'},
+  {key:'Chores', color:'var(--cat-chores)'},
+  {key:'Dog', color:'var(--cat-dog)'},
+  {key:'Wife Ask', color:'var(--cat-wife)'},
+  {key:'Study', color:'var(--cat-study)'},
+  {key:'Other', color:'var(--cat-other)'},
+];
+const CUSTOM_PALETTE = ['#9A6FB0','#B08968','#6F9AB0','#B0A26F','#6FB08B','#B06F8E'];
+function getCategories(){
+  const custom = (CONFIG && CONFIG.customCategories) || [];
+  return DEFAULT_CATEGORIES.concat(custom.map((name, i) => ({ key: name, color: CUSTOM_PALETTE[i % CUSTOM_PALETTE.length] })));
+}
+const DAY_ABBR = ['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];
+const TEMPLATES_TABLE = 'Templates';
+const LOG_TABLE = 'Log';
+
+let CONFIG = JSON.parse(localStorage.getItem('at_config') || 'null');
+let templates = [];
+let logCache = [];
+let selectedDate = localDateStr(new Date());
+let captureCategory = 'Other';
+let captureFrequency = 'oneoff';
+let captureDays = new Set();
+let tplDays = new Set();
+let tplCategory = 'Gym';
+let editingTemplateId = null;
+let notifiedToday = JSON.parse(localStorage.getItem('at_notified') || '{}');
+let railWeekOffset = 0;
+let lastSkipped = null;
+let editingLogId = null;
+let offlineQueue = JSON.parse(localStorage.getItem('at_queue') || '[]');
+let gTokenClient = null;
+let gAccessToken = null;
+let gTokenExpiry = 0;
+
+function localDateStr(d){
+  const y=d.getFullYear(), m=String(d.getMonth()+1).padStart(2,'0'), day=String(d.getDate()).padStart(2,'0');
+  return `${y}-${m}-${day}`;
+}
+function addDays(d, n){ const c = new Date(d); c.setDate(c.getDate()+n); return c; }
+function catColor(cat){ const c = getCategories().find(x=>x.key===cat); return c ? c.color : 'var(--cat-other)'; }
+
+/* ============================================================
+   INIT
+   ============================================================ */
+window.addEventListener('DOMContentLoaded', () => {
+  registerSW();
+  if (CONFIG && CONFIG.baseId && CONFIG.pat) {
+    document.getElementById('setup-screen').style.display = 'none';
+    document.getElementById('app').style.display = 'block';
+    document.getElementById('fab').style.display = 'flex';
+    document.getElementById('digest-time').value = CONFIG.digestTime || '07:30';
+    boot();
+  }
+});
+
+function registerSW(){
+  if ('serviceWorker' in navigator) {
+    navigator.serviceWorker.register('sw.js').catch(()=>{});
+  }
+}
+
+async function boot(){
+  try {
+    await flushQueue();
+    await loadData();
+    renderRail();
+    renderToday();
+    startReminderLoop();
+    if (CONFIG.googleClientId) initGoogleClient();
+    if (CONFIG.googleCalendarEnabled) await syncTodayCalendar();
+  } catch(e) {
+    showToast('Could not load from Airtable' + errSuffix(e));
+    console.error(e);
+  }
+}
+
+function saveSetup(){
+  const baseId = document.getElementById('input-base').value.trim();
+  const pat = document.getElementById('input-pat').value.trim();
+  const err = document.getElementById('setup-error');
+  err.innerHTML = '';
+  if (!baseId || !pat) {
+    err.innerHTML = '<div class="error-banner">Both fields are required.</div>';
+    return;
+  }
+  CONFIG = { baseId, pat, digestTime: '07:30', notifEnabled: false };
+  localStorage.setItem('at_config', JSON.stringify(CONFIG));
+  location.reload();
+}
+
+function disconnectSetup(){
+  if (!confirm('This clears your saved Airtable connection on this device. Continue?')) return;
+  localStorage.removeItem('at_config');
+  location.reload();
+}
+
+/* ============================================================
+   AIRTABLE
+   ============================================================ */
+async function atFetch(table, params=''){
+  const url = `https://api.airtable.com/v0/${CONFIG.baseId}/${encodeURIComponent(table)}${params}`;
+  const res = await fetch(url, { headers: { Authorization: `Bearer ${CONFIG.pat}` } });
+  if (!res.ok) throw new Error('Airtable read failed: ' + res.status);
+  return res.json();
+}
+async function listAll(table){
+  let records = [], offset = null;
+  do {
+    const params = `?pageSize=100${offset ? '&offset=' + offset : ''}`;
+    const data = await atFetch(table, params);
+    records = records.concat(data.records);
+    offset = data.offset;
+  } while (offset);
+  return records;
+}
+async function atCreate(table, fields){
+  const url = `https://api.airtable.com/v0/${CONFIG.baseId}/${encodeURIComponent(table)}`;
+  const res = await fetch(url, {
+    method: 'POST',
+    headers: { Authorization: `Bearer ${CONFIG.pat}`, 'Content-Type': 'application/json' },
+    body: JSON.stringify({ records: [{ fields }], typecast: true })
+  });
+  if (!res.ok) throw new Error('Airtable create failed: ' + res.status);
+  return (await res.json()).records[0];
+}
+async function atUpdate(table, id, fields){
+  const url = `https://api.airtable.com/v0/${CONFIG.baseId}/${encodeURIComponent(table)}`;
+  const res = await fetch(url, {
+    method: 'PATCH',
+    headers: { Authorization: `Bearer ${CONFIG.pat}`, 'Content-Type': 'application/json' },
+    body: JSON.stringify({ records: [{ id, fields }], typecast: true })
+  });
+  if (!res.ok) throw new Error('Airtable update failed: ' + res.status);
+  return (await res.json()).records[0];
+}
+async function atDelete(table, id){
+  const url = `https://api.airtable.com/v0/${CONFIG.baseId}/${encodeURIComponent(table)}?records[]=${id}`;
+  const res = await fetch(url, { method: 'DELETE', headers: { Authorization: `Bearer ${CONFIG.pat}` } });
+  if (!res.ok) throw new Error('Airtable delete failed: ' + res.status);
+  return res.json();
+}
+
+async function loadData(){
+  const [tRecs, lRecs] = await Promise.all([listAll(TEMPLATES_TABLE), listAll(LOG_TABLE)]);
+  templates = tRecs.map(r => ({ id: r.id, ...r.fields }));
+  logCache = lRecs.map(r => ({ id: r.id, ...r.fields }));
+}
+
+/* ============================================================
+   TASK COMPUTATION
+   ============================================================ */
+function computeDayTasks(dateStr){
+  const dow = DAY_ABBR[new Date(dateStr + 'T00:00:00').getDay()];
+  const recurring = templates
+    .filter(t => t.Active !== false && Array.isArray(t.Days) && t.Days.includes(dow))
+    .map(t => {
+      const log = logCache.find(l => l.Type === 'Recurring' && l.TemplateId === t.id && l.Date === dateStr);
+      return {
+        title: t.Title, category: t.Category || 'Other', time: t.Time || '',
+        status: log ? log.Status : 'Pending', source: 'Recurring',
+        templateId: t.id, logId: log ? log.id : null
+      };
+    });
+  const quick = logCache
+    .filter(l => (l.Type === 'QuickCapture' || l.Type === 'OneOff') && l.Date === dateStr)
+    .map(l => ({
+      title: l.Title, category: l.Category || 'Other', time: l.Time || '',
+      status: l.Status, source: l.Type, logId: l.id
+    }));
+  return recurring.concat(quick);
+}
+
+function sortTasks(tasks){
+  const now = new Date();
+  const nowMin = now.getHours() * 60 + now.getMinutes();
+  function score(t){
+    if (t.status === 'Done') return 3;
+    if (t.status === 'Skipped') return 4;
+    if (t.time) {
+      const [h, m] = t.time.split(':').map(Number);
+      if (!isNaN(h) && h * 60 + m <= nowMin) return 0;
+      return 1;
+    }
+    return 2;
+  }
+  return tasks.slice().sort((a, b) => score(a) - score(b) || (a.time || '').localeCompare(b.time || ''));
+}
+
+function computeStreak(templateId, days){
+  let streak = 0;
+  let d = addDays(new Date(), -1);
+  let guard = 0;
+  while (guard < 90) {
+    guard++;
+    const dow = DAY_ABBR[d.getDay()];
+    if (days.includes(dow)) {
+      const ds = localDateStr(d);
+      const log = logCache.find(l => l.Type === 'Recurring' && l.TemplateId === templateId && l.Date === ds);
+      if (log && log.Status === 'Done') streak++;
+      else break;
+    }
+    d = addDays(d, -1);
+  }
+  return streak;
+}
+
+/* ============================================================
+   RENDER: DAY RAIL
+   ============================================================ */
+function renderRail(){
+  const rail = document.getElementById('rail');
+  rail.innerHTML = '';
+  const today = new Date();
+  const thisMonday = addDays(today, -((today.getDay() + 6) % 7));
+  const weekStart = addDays(thisMonday, railWeekOffset * 7);
+  for (let i = 0; i < 7; i++) {
+    const d = addDays(weekStart, i);
+    const ds = localDateStr(d);
+    const isToday = ds === localDateStr(today);
+    const isFuture = d > today && !isToday;
+    const tasks = computeDayTasks(ds);
+    const total = tasks.length;
+    const done = tasks.filter(t => t.status === 'Done').length;
+    const pct = total ? done / total : 0;
+
+    const btn = document.createElement('button');
+    btn.className = 'rail-day' + (isToday ? ' today' : '') + (ds === selectedDate ? ' selected' : '') + (isFuture ? ' future' : '');
+    btn.onclick = () => { selectedDate = ds; renderRail(); renderToday(); };
+
+    const r = 11, c = 2 * Math.PI * r;
+    btn.innerHTML = `
+      <div class="lbl">${DAY_ABBR[d.getDay()].slice(0,2)}</div>
+      <div class="ring">
+        <svg width="26" height="26"><circle class="bg" cx="13" cy="13" r="${r}" fill="none" stroke-width="2.5"></circle>
+        <circle class="fg" cx="13" cy="13" r="${r}" fill="none" stroke-width="2.5" stroke-dasharray="${c}" stroke-dashoffset="${c * (1 - pct)}"></circle></svg>
+        <span>${d.getDate()}</span>
+      </div>`;
+    rail.appendChild(btn);
+  }
+  const lbl = document.getElementById('week-label');
+  if (railWeekOffset === 0) lbl.textContent = '';
+  else {
+    const endD = addDays(weekStart, 6);
+    lbl.textContent = weekStart.toLocaleDateString('en-AU',{day:'numeric',month:'short'}) + ' – ' + endD.toLocaleDateString('en-AU',{day:'numeric',month:'short'}) + (railWeekOffset < 0 ? ' (past)' : ' (ahead)');
+  }
+}
+function shiftWeek(dir){
+  railWeekOffset += dir;
+  renderRail();
+}
+
+/* ============================================================
+   RENDER: TODAY / SELECTED DAY
+   ============================================================ */
+function renderToday(){
+  const today = new Date();
+  const isToday = selectedDate === localDateStr(today);
+  const d = new Date(selectedDate + 'T00:00:00');
+  document.getElementById('hdr-dow').textContent = DAY_ABBR[d.getDay()];
+  document.getElementById('hdr-date').textContent = d.toLocaleDateString('en-AU', { day: 'numeric', month: 'short' });
+  document.getElementById('hdr-sub').textContent = isToday ? "Here's what's on you today." : (d > today ? 'Scheduled' : 'Past');
+
+  const tasks = sortTasks(computeDayTasks(selectedDate));
+  const list = document.getElementById('task-list');
+  list.innerHTML = '';
+
+  if (tasks.length === 0) {
+    list.innerHTML = '<div class="empty-state">Nothing scheduled. Add something with the button below, or set up a recurring task in settings.</div>';
+    return;
+  }
+
+  const now = new Date();
+  const nowMin = now.getHours() * 60 + now.getMinutes();
+
+  tasks.forEach(t => {
+    let isOverdue = false;
+    if (isToday && t.status === 'Pending' && t.time) {
+      const [h, m] = t.time.split(':').map(Number);
+      if (!isNaN(h) && h * 60 + m <= nowMin) isOverdue = true;
+    }
+    const row = document.createElement('div');
+    row.className = 'task' + (isOverdue ? ' overdue' : '') + (t.status === 'Done' ? ' done' : '') + (t.status === 'Skipped' ? ' skipped' : '');
+
+    let streakHtml = '';
+    if (t.source === 'Recurring') {
+      const tpl = templates.find(x => x.id === t.templateId);
+      if (tpl) {
+        const s = computeStreak(t.templateId, tpl.Days || []);
+        if (s > 0) streakHtml = `<span class="streak">${s} day streak</span>`;
+      }
+    }
+
+    row.innerHTML = `
+      <button class="check">${t.status === 'Done' ? '&#10003;' : (t.status === 'Skipped' ? '&#8213;' : '')}</button>
+      <div class="task-body">
+        <div class="task-title">${escapeHtml(t.title)}</div>
+        <div class="task-meta">
+          <span class="cat-pill" style="background:${catColor(t.category)}22;color:${catColor(t.category)}">${escapeHtml(t.category)}</span>
+          ${t.time ? `<span class="task-time">${t.time}</span>` : ''}
+          ${streakHtml}
+        </div>
+      </div>
+      <div class="task-actions">
+        ${t.status === 'Pending' ? '<button class="snooze-btn" title="Push to tomorrow">Tmrw</button><button class="skip-btn">Skip</button>' : ''}
+      </div>`;
+
+    row.querySelector('.check').onclick = () => handleToggle(t);
+    const skipBtn = row.querySelector('.skip-btn');
+    if (skipBtn) skipBtn.onclick = () => handleSkip(t);
+    const snoozeBtn = row.querySelector('.snooze-btn');
+    if (snoozeBtn) snoozeBtn.onclick = () => handleSnooze(t);
+    row.querySelector('.task-body').onclick = () => handleTaskTap(t);
+
+    list.appendChild(row);
+  });
+}
+
+function handleTaskTap(t){
+  if (t.source === 'Recurring') {
+    const tpl = templates.find(x => x.id === t.templateId);
+    if (tpl) { openTemplateForm(tpl); }
+    return;
+  }
+  openEditTask(t);
+}
+
+async function handleSkip(t){
+  await handleSetStatus(t, 'Skipped');
+  // re-resolve the log row (a recurring skip may have just created it)
+  if (!t.logId && t.source === 'Recurring') {
+    const log = logCache.find(l => l.Type === 'Recurring' && l.TemplateId === t.templateId && l.Date === selectedDate);
+    if (log) t.logId = log.id;
+  }
+  lastSkipped = t;
+  showToast('Skipped.', 'Undo', async () => {
+    if (lastSkipped) { await handleSetStatus(lastSkipped, 'Pending'); lastSkipped = null; }
+  });
+}
+
+async function handleSnooze(t){
+  const tomorrow = localDateStr(addDays(new Date(), 1));
+  try {
+    if (t.source === 'Recurring') {
+      // Recurring instance: skip today, create a one-off copy tomorrow
+      await handleSetStatus(t, 'Skipped');
+      const rec = await atCreate(LOG_TABLE, { Title: t.title, Category: t.category, Type: 'QuickCapture', Date: tomorrow, Status: 'Pending', Time: t.time || '' });
+      logCache.push({ id: rec.id, ...rec.fields });
+    } else {
+      const rec = logCache.find(l => l.id === t.logId);
+      if (rec && rec.CalendarEventId) { deleteCalendarEvent(rec.CalendarEventId); }
+      await atUpdate(LOG_TABLE, t.logId, { Date: tomorrow, CalendarEventId: '' });
+      if (rec) { rec.Date = tomorrow; rec.CalendarEventId = ''; }
+    }
+    renderRail();
+    renderToday();
+    showToast('Pushed to tomorrow.');
+  } catch (e) {
+    showToast('Could not snooze that' + errSuffix(e));
+    console.error(e);
+  }
+}
+
+function escapeHtml(s){
+  const d = document.createElement('div'); d.textContent = s || ''; return d.innerHTML;
+}
+
+/* ============================================================
+   EDIT / DELETE ONE-OFF TASKS
+   ============================================================ */
+function openEditTask(t){
+  if (!t.logId) return;
+  const rec = logCache.find(l => l.id === t.logId);
+  if (!rec) return;
+  editingLogId = t.logId;
+  document.getElementById('edit-text').value = rec.Title || '';
+  document.getElementById('edit-date').value = rec.Date || selectedDate;
+  document.getElementById('edit-time').value = rec.Time || '';
+  const catRow = document.getElementById('edit-cats');
+  catRow.innerHTML = '';
+  let editCat = rec.Category || 'Other';
+  getCategories().forEach(c => {
+    const chip = document.createElement('button');
+    chip.className = 'chip' + (c.key === editCat ? ' active' : '');
+    chip.textContent = c.key;
+    chip.onclick = () => { openEditTask.cat = c.key; [...catRow.children].forEach(x=>x.classList.remove('active')); chip.classList.add('active'); };
+    catRow.appendChild(chip);
+  });
+  openEditTask.cat = editCat;
+  document.getElementById('edit-modal').classList.add('open');
+}
+async function submitEditTask(){
+  const rec = logCache.find(l => l.id === editingLogId);
+  if (!rec) return;
+  const title = document.getElementById('edit-text').value.trim();
+  const date = document.getElementById('edit-date').value;
+  const time = document.getElementById('edit-time').value;
+  if (!title || !date) { showToast('Title and date are required.'); return; }
+  try {
+    if (rec.CalendarEventId && (date !== rec.Date || time !== (rec.Time || ''))) {
+      deleteCalendarEvent(rec.CalendarEventId);
+      rec.CalendarEventId = '';
+    }
+    await atUpdate(LOG_TABLE, editingLogId, { Title: title, Category: openEditTask.cat, Date: date, Time: time || '', CalendarEventId: rec.CalendarEventId || '' });
+    Object.assign(rec, { Title: title, Category: openEditTask.cat, Date: date, Time: time || '' });
+    closeModal('edit-modal');
+    renderRail();
+    renderToday();
+    if (CONFIG.googleCalendarEnabled) await syncTodayCalendar();
+    showToast('Updated.');
+  } catch (e) {
+    showToast('Could not update that' + errSuffix(e));
+    console.error(e);
+  }
+}
+async function deleteEditTask(){
+  const rec = logCache.find(l => l.id === editingLogId);
+  if (!rec) return;
+  if (!confirm('Delete this task?')) return;
+  try {
+    if (rec.CalendarEventId) deleteCalendarEvent(rec.CalendarEventId);
+    await atDelete(LOG_TABLE, editingLogId);
+    logCache = logCache.filter(l => l.id !== editingLogId);
+    closeModal('edit-modal');
+    renderRail();
+    renderToday();
+    showToast('Deleted.');
+  } catch (e) {
+    showToast('Could not delete that' + errSuffix(e));
+    console.error(e);
+  }
+}
+
+/* ============================================================
+   REFRESH
+   ============================================================ */
+async function manualRefresh(){
+  showToast('Refreshing…');
+  try {
+    await flushQueue();
+    await loadData();
+    renderRail();
+    renderToday();
+    showToast('Up to date.');
+  } catch (e) {
+    showToast('Refresh failed' + errSuffix(e));
+  }
+}
+document.addEventListener('visibilitychange', async () => {
+  if (document.visibilityState === 'visible' && CONFIG) {
+    try { await flushQueue(); await loadData(); renderRail(); renderToday(); } catch (e) { console.error(e); }
+  }
+});
+window.addEventListener('online', () => { flushQueue(); });
+
+/* ============================================================
+   STATS
+   ============================================================ */
+function openStats(){
+  const body = document.getElementById('stats-body');
+  const cutoff = addDays(new Date(), -30);
+  const activeTemplates = templates.filter(t => t.Active !== false);
+  let html = '';
+
+  if (activeTemplates.length === 0) {
+    html += '<div class="info-note">No recurring tasks yet — stats show up once you have some.</div>';
+  }
+
+  activeTemplates.forEach(t => {
+    let scheduled = 0, done = 0;
+    for (let d = new Date(cutoff); d <= new Date(); d = addDays(d, 1)) {
+      const dow = DAY_ABBR[d.getDay()];
+      if (!(t.Days || []).includes(dow)) continue;
+      const ds = localDateStr(d);
+      if (ds === localDateStr(new Date())) continue; // don't count today against them
+      scheduled++;
+      const log = logCache.find(l => l.Type === 'Recurring' && l.TemplateId === t.id && l.Date === ds);
+      if (log && log.Status === 'Done') done++;
+    }
+    const current = computeStreak(t.id, t.Days || []);
+    let longest = 0, run = 0;
+    for (let d = new Date(cutoff); d <= new Date(); d = addDays(d, 1)) {
+      const dow = DAY_ABBR[d.getDay()];
+      if (!(t.Days || []).includes(dow)) continue;
+      const ds = localDateStr(d);
+      const log = logCache.find(l => l.Type === 'Recurring' && l.TemplateId === t.id && l.Date === ds);
+      if (log && log.Status === 'Done') { run++; longest = Math.max(longest, run); } else if (ds !== localDateStr(new Date())) { run = 0; }
+    }
+    const pct = scheduled ? Math.round(done / scheduled * 100) : 0;
+    html += `
+      <div class="template-row" style="flex-direction:column;align-items:stretch;gap:6px">
+        <div style="display:flex;justify-content:space-between;align-items:center">
+          <span class="t-name">${escapeHtml(t.Title)}</span>
+          <span class="mono" style="font-size:12px;color:${pct >= 80 ? 'var(--green)' : pct >= 50 ? 'var(--amber)' : 'var(--red)'}">${done}/${scheduled} · ${pct}%</span>
+        </div>
+        <div style="height:5px;background:var(--panel);border-radius:3px;overflow:hidden">
+          <div style="height:100%;width:${pct}%;background:${pct >= 80 ? 'var(--green)' : pct >= 50 ? 'var(--amber)' : 'var(--red)'}"></div>
+        </div>
+        <div class="t-meta">Current streak: ${current} · Longest (30d): ${longest}</div>
+      </div>`;
+  });
+
+  const cutoffStr = localDateStr(cutoff);
+  const oneOffs = logCache.filter(l => (l.Type === 'QuickCapture' || l.Type === 'OneOff') && l.Date >= cutoffStr && l.Date <= localDateStr(new Date()));
+  const oDone = oneOffs.filter(l => l.Status === 'Done').length;
+  html += `<div class="info-note" style="margin-top:12px">One-off tasks: ${oDone}/${oneOffs.length} completed in the last 30 days.</div>`;
+
+  body.innerHTML = html;
+  document.getElementById('stats-modal').classList.add('open');
+}
+
+async function handleToggle(t){
+  if (t.status === 'Done') { await handleSetStatus(t, 'Pending'); }
+  else { await handleSetStatus(t, 'Done'); }
+}
+
+async function handleSetStatus(t, status){
+  try {
+    if (t.logId) {
+      const rec = logCache.find(l => l.id === t.logId);
+      await atUpdate(LOG_TABLE, t.logId, { Status: status, CompletedAt: status === 'Done' ? new Date().toISOString() : '', CalendarEventId: '' });
+      if (rec && rec.CalendarEventId && (status === 'Done' || status === 'Skipped')) {
+        deleteCalendarEvent(rec.CalendarEventId);
+      }
+      if (rec) { rec.Status = status; rec.CalendarEventId = ''; }
+    } else {
+      const fields = {
+        Title: t.title, Category: t.category, Type: t.source,
+        Date: selectedDate, Status: status,
+        CompletedAt: status === 'Done' ? new Date().toISOString() : ''
+      };
+      if (t.source === 'Recurring') fields.TemplateId = t.templateId;
+      const rec = await atCreate(LOG_TABLE, fields);
+      logCache.push({ id: rec.id, ...rec.fields });
+    }
+    renderRail();
+    renderToday();
+    if (status === 'Done') showToast('Done. Keep going.');
+  } catch (e) {
+    showToast('Could not save that' + errSuffix(e));
+    console.error(e);
+  }
+}
+
+/* ============================================================
+   QUICK CAPTURE
+   ============================================================ */
+function openCapture(defaultCat){
+  captureCategory = defaultCat;
+  captureFrequency = 'oneoff';
+  captureDays = new Set();
+  document.getElementById('capture-text').value = '';
+  document.getElementById('capture-time').value = '';
+  document.getElementById('capture-title').textContent = defaultCat === 'Wife Ask' ? 'Wife asked me to…' : 'Add a task';
+
+  const catRow = document.getElementById('capture-cats');
+  catRow.innerHTML = '';
+  getCategories().forEach(c => {
+    const chip = document.createElement('button');
+    chip.className = 'chip' + (c.key === captureCategory ? ' active' : '');
+    chip.textContent = c.key;
+    chip.onclick = () => { captureCategory = c.key; refreshCaptureChips(); };
+    catRow.appendChild(chip);
+  });
+
+  renderCaptureFreqChips();
+
+  const dueRow = document.getElementById('capture-due');
+  dueRow.innerHTML = '';
+  const dateInput = document.getElementById('capture-date');
+  const todayStr = localDateStr(new Date());
+  dateInput.min = todayStr;
+  dateInput.value = todayStr;
+  openCapture.dueDate = todayStr;
+  ['Today', 'Tomorrow'].forEach((label, i) => {
+    const chip = document.createElement('button');
+    chip.className = 'chip' + (i === 0 ? ' active' : '');
+    chip.textContent = label;
+    chip.onclick = () => {
+      const d = localDateStr(addDays(new Date(), i));
+      openCapture.dueDate = d;
+      dateInput.value = d;
+      [...dueRow.children].forEach(c => c.classList.remove('active'));
+      chip.classList.add('active');
+    };
+    dueRow.appendChild(chip);
+  });
+  dateInput.onchange = () => {
+    if (dateInput.value) {
+      openCapture.dueDate = dateInput.value;
+      [...dueRow.children].forEach(c => c.classList.remove('active'));
+    }
+  };
+
+  const daysRow = document.getElementById('capture-days');
+  daysRow.innerHTML = '';
+  ['Mon','Tue','Wed','Thu','Fri','Sat','Sun'].forEach(d => {
+    const chip = document.createElement('button');
+    chip.className = 'day-chip';
+    chip.textContent = d.slice(0,1);
+    chip.onclick = () => {
+      if (captureDays.has(d)) captureDays.delete(d); else captureDays.add(d);
+      chip.classList.toggle('active');
+    };
+    daysRow.appendChild(chip);
+  });
+
+  document.getElementById('capture-modal').classList.add('open');
+  setTimeout(() => document.getElementById('capture-text').focus(), 50);
+}
+function renderCaptureFreqChips(){
+  const row = document.getElementById('capture-freq');
+  row.innerHTML = '';
+  [['oneoff','One-off'], ['recurring','Recurring']].forEach(([val, label]) => {
+    const chip = document.createElement('button');
+    chip.className = 'chip' + (captureFrequency === val ? ' active' : '');
+    chip.textContent = label;
+    chip.onclick = () => {
+      captureFrequency = val;
+      renderCaptureFreqChips();
+      document.getElementById('capture-oneoff-fields').style.display = val === 'oneoff' ? 'block' : 'none';
+      document.getElementById('capture-recurring-fields').style.display = val === 'recurring' ? 'block' : 'none';
+    };
+    row.appendChild(chip);
+  });
+}
+function refreshCaptureChips(){
+  document.querySelectorAll('#capture-cats .chip').forEach(chip => {
+    chip.classList.toggle('active', chip.textContent === captureCategory);
+  });
+}
+async function submitCapture(){
+  const text = document.getElementById('capture-text').value.trim();
+  const time = document.getElementById('capture-time').value;
+  if (!text) return;
+
+  if (captureFrequency === 'recurring') {
+    if (captureDays.size === 0) { showToast('Pick at least one day.'); return; }
+    try {
+      const fields = { Title: text, Category: captureCategory, Days: [...captureDays], Time: time || '', Active: true };
+      const rec = await atCreate(TEMPLATES_TABLE, fields);
+      templates.push({ id: rec.id, ...rec.fields });
+      closeModal('capture-modal');
+      renderRail();
+      renderToday();
+      if (CONFIG.googleCalendarEnabled) await syncTodayCalendar();
+      showToast('Added as a recurring task.');
+    } catch (e) {
+      showToast('Could not add that' + errSuffix(e));
+      console.error(e);
+    }
+    return;
+  }
+
+  const dateVal = document.getElementById('capture-date').value || openCapture.dueDate;
+  try {
+    const fields = { Title: text, Category: captureCategory, Type: 'QuickCapture', Date: dateVal, Status: 'Pending', Time: time || '' };
+    const rec = await atCreate(LOG_TABLE, fields);
+    const log = { id: rec.id, ...rec.fields };
+    logCache.push(log);
+    if (time && CONFIG.googleCalendarEnabled && dateVal === localDateStr(new Date())) {
+      const eventId = await createCalendarEvent(text, dateVal, time);
+      if (eventId) { await atUpdate(LOG_TABLE, log.id, { CalendarEventId: eventId }); log.CalendarEventId = eventId; }
+    }
+    closeModal('capture-modal');
+    if (dateVal === selectedDate) renderToday();
+    renderRail();
+    showToast('Added to the list.');
+  } catch (e) {
+    if (!navigator.onLine) {
+      queueCreate(LOG_TABLE, { Title: text, Category: captureCategory, Type: 'QuickCapture', Date: dateVal, Status: 'Pending', Time: time || '' });
+      closeModal('capture-modal');
+      showToast('Offline — saved locally, will sync when back online.');
+    } else {
+      showToast('Could not add that' + errSuffix(e));
+    }
+    console.error(e);
+  }
+}
+
+/* ============================================================
+   SETTINGS / TEMPLATES
+   ============================================================ */
+function openSettings(){
+  document.getElementById('notif-switch').classList.toggle('on', CONFIG.notifEnabled && Notification.permission === 'granted');
+  document.getElementById('gcal-client-id').value = CONFIG.googleClientId || '';
+  updateCalendarStatus();
+  renderTemplateList();
+  renderCustomCategories();
+  document.getElementById('settings-modal').classList.add('open');
+}
+function renderCustomCategories(){
+  const wrap = document.getElementById('custom-cat-list');
+  wrap.innerHTML = '';
+  const custom = CONFIG.customCategories || [];
+  if (custom.length === 0) { wrap.innerHTML = '<span class="info-note">No custom categories yet.</span>'; return; }
+  custom.forEach(name => {
+    const chip = document.createElement('button');
+    chip.className = 'chip';
+    chip.innerHTML = escapeHtml(name) + ' &times;';
+    chip.onclick = () => {
+      if (!confirm(`Remove "${name}"? Existing tasks keep the label; it just leaves the picker.`)) return;
+      CONFIG.customCategories = (CONFIG.customCategories || []).filter(c => c !== name);
+      localStorage.setItem('at_config', JSON.stringify(CONFIG));
+      renderCustomCategories();
+    };
+    wrap.appendChild(chip);
+  });
+}
+function addCustomCategory(){
+  const input = document.getElementById('new-cat-name');
+  const name = input.value.trim();
+  if (!name) return;
+  const all = getCategories().map(c => c.key.toLowerCase());
+  if (all.includes(name.toLowerCase())) { showToast('That category already exists.'); return; }
+  CONFIG.customCategories = (CONFIG.customCategories || []).concat([name]);
+  localStorage.setItem('at_config', JSON.stringify(CONFIG));
+  input.value = '';
+  renderCustomCategories();
+  showToast('Added — it\u2019ll show in the pickers now.');
+}
+function renderTemplateList(){
+  const wrap = document.getElementById('template-list');
+  wrap.innerHTML = '';
+  if (templates.length === 0) {
+    wrap.innerHTML = '<div class="info-note">No recurring tasks yet.</div>';
+    return;
+  }
+  templates.forEach(t => {
+    const row = document.createElement('div');
+    row.className = 'template-row';
+    row.innerHTML = `
+      <div>
+        <div class="t-name">${escapeHtml(t.Title)}${t.Active === false ? ' <span style="color:var(--text-faint)">(paused)</span>' : ''}</div>
+        <div class="t-meta">${escapeHtml(t.Category || '')} · ${(t.Days||[]).join(' ')}${t.Time ? ' · ' + t.Time : ''}</div>
+      </div>
+      <button>Edit</button>`;
+    row.querySelector('button').onclick = () => openTemplateForm(t);
+    wrap.appendChild(row);
+  });
+}
+function openTemplateForm(tpl){
+  editingTemplateId = tpl ? tpl.id : null;
+  document.getElementById('tpl-title').value = tpl ? tpl.Title : '';
+  document.getElementById('tpl-time').value = tpl ? (tpl.Time || '') : '';
+  tplCategory = tpl ? (tpl.Category || 'Gym') : 'Gym';
+  tplDays = new Set(tpl ? (tpl.Days || []) : []);
+
+  const catRow = document.getElementById('tpl-cats');
+  catRow.innerHTML = '';
+  getCategories().forEach(c => {
+    const chip = document.createElement('button');
+    chip.className = 'chip' + (c.key === tplCategory ? ' active' : '');
+    chip.textContent = c.key;
+    chip.onclick = () => { tplCategory = c.key; [...catRow.children].forEach(x=>x.classList.remove('active')); chip.classList.add('active'); };
+    catRow.appendChild(chip);
+  });
+
+  const dayRow = document.getElementById('tpl-days');
+  dayRow.innerHTML = '';
+  ['Mon','Tue','Wed','Thu','Fri','Sat','Sun'].forEach(d => {
+    const chip = document.createElement('button');
+    chip.className = 'day-chip' + (tplDays.has(d) ? ' active' : '');
+    chip.textContent = d.slice(0,1);
+    chip.onclick = () => {
+      if (tplDays.has(d)) tplDays.delete(d); else tplDays.add(d);
+      chip.classList.toggle('active');
+    };
+    dayRow.appendChild(chip);
+  });
+
+  document.getElementById('tpl-manage-row').style.display = tpl ? 'flex' : 'none';
+  if (tpl) document.getElementById('tpl-pause-btn').textContent = tpl.Active === false ? 'Resume' : 'Pause';
+
+  document.getElementById('settings-modal').classList.remove('open');
+  document.getElementById('template-modal').classList.add('open');
+}
+async function togglePauseTemplate(){
+  const t = templates.find(x => x.id === editingTemplateId);
+  if (!t) return;
+  const newActive = t.Active === false;
+  try {
+    await atUpdate(TEMPLATES_TABLE, editingTemplateId, { Active: newActive });
+    t.Active = newActive;
+    closeModal('template-modal');
+    document.getElementById('settings-modal').classList.add('open');
+    renderTemplateList();
+    renderRail();
+    renderToday();
+    showToast(newActive ? 'Resumed.' : 'Paused — it won\u2019t appear until you resume it.');
+  } catch (e) {
+    showToast('Could not update that' + errSuffix(e));
+    console.error(e);
+  }
+}
+async function deleteTemplate(){
+  const t = templates.find(x => x.id === editingTemplateId);
+  if (!t) return;
+  if (!confirm(`Delete "${t.Title}" permanently? Past history stays in the Log.`)) return;
+  try {
+    await atDelete(TEMPLATES_TABLE, editingTemplateId);
+    templates = templates.filter(x => x.id !== editingTemplateId);
+    closeModal('template-modal');
+    document.getElementById('settings-modal').classList.add('open');
+    renderTemplateList();
+    renderRail();
+    renderToday();
+    showToast('Deleted.');
+  } catch (e) {
+    showToast('Could not delete that' + errSuffix(e));
+    console.error(e);
+  }
+}
+async function submitTemplate(){
+  const title = document.getElementById('tpl-title').value.trim();
+  const time = document.getElementById('tpl-time').value;
+  if (!title) return;
+  if (tplDays.size === 0) { showToast('Pick at least one day.'); return; }
+  try {
+    const fields = { Title: title, Category: tplCategory, Days: [...tplDays], Time: time || '', Active: true };
+    if (editingTemplateId) {
+      await atUpdate(TEMPLATES_TABLE, editingTemplateId, fields);
+      const t = templates.find(x => x.id === editingTemplateId);
+      Object.assign(t, fields);
+    } else {
+      const rec = await atCreate(TEMPLATES_TABLE, fields);
+      templates.push({ id: rec.id, ...rec.fields });
+    }
+    closeModal('template-modal');
+    document.getElementById('settings-modal').classList.add('open');
+    renderTemplateList();
+    renderRail();
+    renderToday();
+    if (CONFIG.googleCalendarEnabled) await syncTodayCalendar();
+  } catch (e) {
+    showToast('Could not save that recurring task' + errSuffix(e));
+    console.error(e);
+  }
+}
+
+function closeModal(id){ document.getElementById(id).classList.remove('open'); }
+
+/* ============================================================
+   GOOGLE CALENDAR
+   ============================================================ */
+function initGoogleClient(){
+  if (!CONFIG.googleClientId) return;
+  if (!window.google || !google.accounts || !google.accounts.oauth2) { setTimeout(initGoogleClient, 400); return; }
+  gTokenClient = google.accounts.oauth2.initTokenClient({
+    client_id: CONFIG.googleClientId,
+    scope: 'https://www.googleapis.com/auth/calendar.events',
+    callback: () => {}
+  });
+  updateCalendarStatus();
+}
+function connectGoogleCalendar(){
+  const cid = document.getElementById('gcal-client-id').value.trim();
+  if (!cid) { showToast('Paste a Google OAuth Client ID first.'); return; }
+  CONFIG.googleClientId = cid;
+  localStorage.setItem('at_config', JSON.stringify(CONFIG));
+  gTokenClient = google.accounts.oauth2.initTokenClient({
+    client_id: cid,
+    scope: 'https://www.googleapis.com/auth/calendar.events',
+    callback: async (resp) => {
+      if (resp.error) { showToast('Google sign-in failed — check the Client ID and authorized origin.'); return; }
+      gAccessToken = resp.access_token;
+      gTokenExpiry = Date.now() + (resp.expires_in * 1000 - 60000);
+      CONFIG.googleCalendarEnabled = true;
+      localStorage.setItem('at_config', JSON.stringify(CONFIG));
+      updateCalendarStatus();
+      showToast('Google Calendar connected.');
+      await syncTodayCalendar();
+    }
+  });
+  gTokenClient.requestAccessToken();
+}
+function updateCalendarStatus(){
+  const el = document.getElementById('gcal-status');
+  if (!el) return;
+  el.textContent = CONFIG.googleCalendarEnabled ? 'Connected — timed tasks will sync automatically.' : 'Not connected yet.';
+}
+async function ensureGoogleToken(){
+  if (gAccessToken && Date.now() < gTokenExpiry) return gAccessToken;
+  return new Promise((resolve, reject) => {
+    if (!gTokenClient) { reject('Google Calendar not connected'); return; }
+    gTokenClient.callback = (resp) => {
+      if (resp.error) { reject(resp.error); return; }
+      gAccessToken = resp.access_token;
+      gTokenExpiry = Date.now() + (resp.expires_in * 1000 - 60000);
+      resolve(gAccessToken);
+    };
+    gTokenClient.requestAccessToken({ prompt: '' });
+  });
+}
+async function createCalendarEvent(title, dateStr, timeStr){
+  try {
+    const token = await ensureGoogleToken();
+    const start = new Date(dateStr + 'T' + timeStr + ':00');
+    const end = new Date(start.getTime() + 30 * 60000);
+    const tz = Intl.DateTimeFormat().resolvedOptions().timeZone;
+    const body = {
+      summary: title,
+      start: { dateTime: start.toISOString(), timeZone: tz },
+      end: { dateTime: end.toISOString(), timeZone: tz },
+      reminders: { useDefault: false, overrides: [{ method: 'popup', minutes: 0 }] }
+    };
+    const res = await fetch('https://www.googleapis.com/calendar/v3/calendars/primary/events', {
+      method: 'POST',
+      headers: { Authorization: 'Bearer ' + token, 'Content-Type': 'application/json' },
+      body: JSON.stringify(body)
+    });
+    if (!res.ok) throw new Error('Calendar create failed: ' + res.status);
+    const data = await res.json();
+    return data.id;
+  } catch (e) { console.error(e); return null; }
+}
+async function deleteCalendarEvent(eventId){
+  try {
+    const token = await ensureGoogleToken();
+    await fetch(`https://www.googleapis.com/calendar/v3/calendars/primary/events/${eventId}`, {
+      method: 'DELETE', headers: { Authorization: 'Bearer ' + token }
+    });
+  } catch (e) { console.error(e); }
+}
+async function syncTodayCalendar(){
+  if (!CONFIG.googleCalendarEnabled) return;
+  const todayStr = localDateStr(new Date());
+  const dow = DAY_ABBR[new Date().getDay()];
+  const due = templates.filter(t => t.Active !== false && t.Time && Array.isArray(t.Days) && t.Days.includes(dow));
+  for (const t of due) {
+    let log = logCache.find(l => l.Type === 'Recurring' && l.TemplateId === t.id && l.Date === todayStr);
+    try {
+      if (!log) {
+        const rec = await atCreate(LOG_TABLE, { Title: t.Title, Category: t.Category, Type: 'Recurring', TemplateId: t.id, Date: todayStr, Status: 'Pending' });
+        log = { id: rec.id, ...rec.fields };
+        logCache.push(log);
+      }
+      if (log.Status === 'Pending' && !log.CalendarEventId) {
+        const eventId = await createCalendarEvent(t.Title, todayStr, t.Time);
+        if (eventId) {
+          await atUpdate(LOG_TABLE, log.id, { CalendarEventId: eventId });
+          log.CalendarEventId = eventId;
+        }
+      }
+    } catch (e) { console.error(e); }
+  }
+
+  const todayQuick = logCache.filter(l => (l.Type === 'QuickCapture' || l.Type === 'OneOff') && l.Date === todayStr && l.Status === 'Pending' && l.Time && !l.CalendarEventId);
+  for (const l of todayQuick) {
+    try {
+      const eventId = await createCalendarEvent(l.Title, todayStr, l.Time);
+      if (eventId) {
+        await atUpdate(LOG_TABLE, l.id, { CalendarEventId: eventId });
+        l.CalendarEventId = eventId;
+      }
+    } catch (e) { console.error(e); }
+  }
+
+  renderRail();
+  renderToday();
+}
+
+/* ============================================================
+   NOTIFICATIONS
+   ============================================================ */
+async function toggleNotifications(){
+  if (!CONFIG.notifEnabled || Notification.permission !== 'granted') {
+    const perm = await Notification.requestPermission();
+    if (perm !== 'granted') { showToast('Notifications blocked in browser settings.'); return; }
+    CONFIG.notifEnabled = true;
+  } else {
+    CONFIG.notifEnabled = false;
+  }
+  localStorage.setItem('at_config', JSON.stringify(CONFIG));
+  document.getElementById('notif-switch').classList.toggle('on', CONFIG.notifEnabled);
+}
+document.getElementById('digest-time').addEventListener('change', (e) => {
+  CONFIG.digestTime = e.target.value;
+  localStorage.setItem('at_config', JSON.stringify(CONFIG));
+});
+
+function fireNotification(title, body, tag){
+  if (!CONFIG.notifEnabled || Notification.permission !== 'granted') return;
+  if (navigator.serviceWorker && navigator.serviceWorker.controller) {
+    navigator.serviceWorker.ready.then(reg => reg.showNotification(title, { body, tag, icon: 'icon-192.png' }));
+  } else {
+    new Notification(title, { body, tag, icon: 'icon-192.png' });
+  }
+}
+
+function startReminderLoop(){
+  checkReminders();
+  setInterval(checkReminders, 60000);
+}
+function checkReminders(){
+  if (!CONFIG.notifEnabled || Notification.permission !== 'granted') return;
+  const today = localDateStr(new Date());
+  const now = new Date();
+  const nowMin = now.getHours() * 60 + now.getMinutes();
+  const hhmm = String(now.getHours()).padStart(2,'0') + ':' + String(now.getMinutes()).padStart(2,'0');
+
+  // per-task due reminders
+  const tasks = computeDayTasks(today);
+  tasks.forEach(t => {
+    if (t.status !== 'Pending' || !t.time) return;
+    const [h, m] = t.time.split(':').map(Number);
+    if (isNaN(h)) return;
+    const key = today + '|' + t.title + '|' + t.time;
+    if (h * 60 + m === nowMin && !notifiedToday[key]) {
+      fireNotification('Due now', t.title, key);
+      notifiedToday[key] = true;
+      localStorage.setItem('at_notified', JSON.stringify(notifiedToday));
+    }
+  });
+
+  // daily digest
+  const digestKey = today + '|digest';
+  if (hhmm === (CONFIG.digestTime || '07:30') && !notifiedToday[digestKey]) {
+    const pending = tasks.filter(t => t.status === 'Pending').length;
+    if (pending > 0) fireNotification('Today', `${pending} thing${pending===1?'':'s'} on your list. Get moving.`, digestKey);
+    notifiedToday[digestKey] = true;
+    localStorage.setItem('at_notified', JSON.stringify(notifiedToday));
+  }
+}
+
+/* ============================================================
+   TOAST
+   ============================================================ */
+let toastTimer;
+function showToast(msg, actionLabel, actionFn){
+  const el = document.getElementById('toast');
+  el.innerHTML = escapeHtml(msg);
+  if (actionLabel && actionFn) {
+    const btn = document.createElement('button');
+    btn.textContent = actionLabel;
+    btn.style.cssText = 'background:none;border:none;color:var(--amber);font-weight:600;margin-left:10px;font-size:13px';
+    btn.onclick = () => { actionFn(); el.style.display = 'none'; };
+    el.appendChild(btn);
+  }
+  el.style.display = 'block';
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(() => { el.style.display = 'none'; }, actionLabel ? 5000 : 2200);
+}
+
+function errSuffix(e){
+  const msg = String(e && e.message || e || '');
+  const m = msg.match(/(\d{3})/);
+  if (!m) return navigator.onLine ? '.' : ' — you look offline.';
+  const code = m[1];
+  const hints = { '401': 'token invalid', '403': 'token not granted to this base', '404': 'base ID or table name wrong', '422': 'field name mismatch in Airtable', '429': 'rate limited, try again shortly' };
+  return ` (HTTP ${code}${hints[code] ? ' — ' + hints[code] : ''}).`;
+}
+
+/* ============================================================
+   OFFLINE QUEUE
+   ============================================================ */
+function saveQueue(){ localStorage.setItem('at_queue', JSON.stringify(offlineQueue)); }
+function queueCreate(table, fields){
+  offlineQueue.push({ table, fields, ts: Date.now() });
+  saveQueue();
+}
+async function flushQueue(){
+  if (offlineQueue.length === 0) return;
+  const pending = offlineQueue.slice();
+  const failed = [];
+  for (const item of pending) {
+    try {
+      const rec = await atCreate(item.table, item.fields);
+      if (item.table === LOG_TABLE) logCache.push({ id: rec.id, ...rec.fields });
+      if (item.table === TEMPLATES_TABLE) templates.push({ id: rec.id, ...rec.fields });
+    } catch (e) { failed.push(item); }
+  }
+  offlineQueue = failed;
+  saveQueue();
+  if (pending.length > failed.length) {
+    renderRail(); renderToday();
+    showToast(`Synced ${pending.length - failed.length} queued task${pending.length - failed.length === 1 ? '' : 's'}.`);
+  }
+}
+</script>
+</body>
+</html>
