@@ -1,5 +1,5 @@
-const CACHE = 'do-it-v3';
-const SHELL = ['./accountability-tracker-v3.html', './manifest.json', './icon-192.png', './icon-512.png'];
+const CACHE = 'do-it-v4';
+const SHELL = ['./accountability-tracker-v4.html', './manifest.json', './icon-192.png', './icon-512.png'];
 
 self.addEventListener('install', (e) => {
   self.skipWaiting();
@@ -24,7 +24,7 @@ self.addEventListener('notificationclick', (e) => {
   e.waitUntil(
     self.clients.matchAll({ type: 'window' }).then((clients) => {
       for (const c of clients) { if ('focus' in c) return c.focus(); }
-      if (self.clients.openWindow) return self.clients.openWindow('./accountability-tracker-v3.html');
+      if (self.clients.openWindow) return self.clients.openWindow('./accountability-tracker-v4.html');
     })
   );
 });
