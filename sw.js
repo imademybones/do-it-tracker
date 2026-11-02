@@ -1,4 +1,4 @@
-const CACHE = 'do-it-v5';
+const CACHE = 'do-it-v5.1';
 const SHELL = ['./', './index.html', './manifest.json', './icon-192.png', './icon-512.png'];
 
 self.addEventListener('install', (e) => {

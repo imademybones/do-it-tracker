@@ -380,6 +380,11 @@
       </div>
     </div>
 
+    <div class="section" id="install-section" hidden>
+      <h3>Install app</h3>
+      <div id="install-body"></div>
+    </div>
+
     <div class="section">
       <h3>Repeating tasks</h3>
       <div id="tpl-list"></div>
@@ -469,7 +474,7 @@ let cursor = new Date();           // any date inside the displayed week/month
 let filterCat = null;
 let taskIndex = {};
 let detailTask = null;
-let form = {};
+let taskForm = {};
 let notifiedToday = readJSON('at_notified', {});
 let offlineQueue = readJSON('at_queue', []);
 let lastLoad = 0;
@@ -771,7 +776,46 @@ function renderBanner(){
   if (lastLoad && templates.length === 0 && !(CONFIG && CONFIG.starterDismissed)) {
     el.innerHTML = `<div class="banner"><p><b>No repeating tasks yet.</b> Start with a set of common weekly, fortnightly and monthly ones?</p>
       <button class="btn" onclick="openStarters()">Choose starters</button><button class="btn ghost" onclick="dismissStarterBanner()">No thanks</button></div>`;
+  } else if (installMode() && !(CONFIG && CONFIG.installDismissed)) {
+    el.innerHTML = `<div class="banner"><p><b>Put Do It on your home screen.</b> ${escapeHtml(installHint(true))}</p>
+      ${installMode() === 'prompt' ? '<button class="btn" onclick="installApp()">Install</button>' : ''}<button class="btn ghost" onclick="dismissInstallBanner()">${installMode() === 'prompt' ? 'Not now' : 'Got it'}</button></div>`;
   } else el.innerHTML = '';
+}
+/* ---------- Install ---------- */
+let deferredInstall = null;
+window.addEventListener('beforeinstallprompt', (e) => { e.preventDefault(); deferredInstall = e; if (CONFIG && CONFIG.pat) renderBanner(); });
+window.addEventListener('appinstalled', () => { deferredInstall = null; showToast('Installed. Open Do It from your home screen.'); renderBanner(); });
+function isStandalone(){ return window.matchMedia('(display-mode: standalone)').matches || navigator.standalone === true; }
+function isIOS(){ return /iPad|iPhone|iPod/.test(navigator.userAgent) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1); }
+function isInAppBrowser(){ return /FBAN|FBAV|Instagram|Line\/|GSA\/|; wv\)|WebView|Claude/i.test(navigator.userAgent) || (isIOS() && !/Safari\//.test(navigator.userAgent)); }
+// 'prompt' = browser offered a one-tap install; 'ios' / 'manual' = show instructions; null = nothing to do
+function installMode(){
+  if (isStandalone()) return null;
+  if (deferredInstall) return 'prompt';
+  if (/Mobi|Android|iPhone|iPad/i.test(navigator.userAgent) || isIOS()) return isIOS() ? 'ios' : 'manual';
+  return null;
+}
+function installHint(short){
+  const mode = installMode();
+  if (mode === 'prompt') return short ? 'One tap and it opens like a normal app.' : 'Your browser can install Do It as an app.';
+  if (isInAppBrowser()) return 'You’re in another app’s built-in browser, which can’t install apps. Open this page in ' + (isIOS() ? 'Safari' : 'Chrome') + ' first (look for “Open in browser” in the ⋯ menu).';
+  if (mode === 'ios') return 'In Safari, tap the Share button (square with an arrow), then “Add to Home Screen”.';
+  return 'In Chrome, tap the ⋮ menu, then “Install app” or “Add to Home screen”. If it says “Open in app”, it’s already installed — check your app drawer.';
+}
+async function installApp(){
+  if (!deferredInstall) return;
+  deferredInstall.prompt();
+  try { await deferredInstall.userChoice; } catch (e) {}
+  deferredInstall = null;
+  renderBanner(); renderInstallSection();
+}
+function dismissInstallBanner(){ CONFIG.installDismissed = true; saveConfig(); renderBanner(); }
+function renderInstallSection(){
+  const mode = installMode(), sec = document.getElementById('install-section');
+  sec.hidden = !mode;
+  if (!mode) return;
+  document.getElementById('install-body').innerHTML = `<div class="hint" style="margin:0 0 10px">${escapeHtml(installHint(false))}</div>` +
+    (mode === 'prompt' ? '<button class="btn block" onclick="installApp()">Install Do It</button>' : '');
 }
 function dismissStarterBanner(){ CONFIG.starterDismissed = true; saveConfig(); renderBanner(); }
 
@@ -1038,7 +1082,7 @@ function openTaskForm(opts){
   const tpl = opts.templateId ? templates.find(t => t.id === opts.templateId) : null;
   const log = opts.logId ? logCache.find(l => l.id === opts.logId) : null;
   const defaultDate = opts.date || (view === 'week' && mondayOf(cursor).getTime() !== mondayOf(new Date()).getTime() ? ds(mondayOf(cursor)) : todayStr());
-  form = {
+  taskForm = {
     templateId: tpl ? tpl.id : null, logId: log ? log.id : null,
     kind: tpl || opts.kind === 'repeat' ? 'repeat' : 'once',
     category: (tpl && tpl.Category) || (log && log.Category) || filterCat || 'Chores',
@@ -1075,27 +1119,29 @@ function openTaskForm(opts){
   }
   document.getElementById('form-extra').innerHTML = extra.join('');
   renderFormChips();
-  setFormKind(form.kind);
+  setFormKind(taskForm.kind);
   closeSheet('settings-sheet');
   openSheet('form-sheet');
   setTimeout(() => document.getElementById('f-title').focus(), 50);
 }
 function renderFormChips(){
   document.getElementById('f-cats').innerHTML = getCategories().map(c =>
-    `<button class="chip ${form.category === c.key ? 'on' : ''}" style="--c:${c.color}" onclick="form.category=${escapeHtml(JSON.stringify(c.key))};renderFormChips()"><span class="dot"></span>${escapeHtml(c.key)}</button>`).join('');
+    `<button class="chip ${taskForm.category === c.key ? 'on' : ''}" style="--c:${c.color}" onclick="pickFormCategory(${escapeHtml(JSON.stringify(c.key))})"><span class="dot"></span>${escapeHtml(c.key)}</button>`).join('');
   document.getElementById('f-days').innerHTML = WEEK_DAYS.map(d =>
-    `<button class="chip ${form.days.has(d) ? 'on' : ''}" onclick="toggleFormDay('${d}')">${d}</button>`).join('') +
-    `<button class="chip" onclick="form.days=new Set(${form.days.size === 7 ? '' : 'WEEK_DAYS'});renderFormChips()">${form.days.size === 7 ? 'Clear' : 'Every day'}</button>`;
+    `<button class="chip ${taskForm.days.has(d) ? 'on' : ''}" onclick="toggleFormDay('${d}')">${d}</button>`).join('') +
+    `<button class="chip" onclick="toggleAllFormDays()">${taskForm.days.size === 7 ? 'Clear' : 'Every day'}</button>`;
 }
-function toggleFormDay(d){ form.days.has(d) ? form.days.delete(d) : form.days.add(d); renderFormChips(); }
+function pickFormCategory(c){ taskForm.category = c; renderFormChips(); }
+function toggleAllFormDays(){ taskForm.days = new Set(taskForm.days.size === 7 ? [] : WEEK_DAYS); renderFormChips(); }
+function toggleFormDay(d){ taskForm.days.has(d) ? taskForm.days.delete(d) : taskForm.days.add(d); renderFormChips(); }
 function setFormKind(k){
-  form.kind = k;
+  taskForm.kind = k;
   document.querySelectorAll('#f-kind button').forEach(b => b.classList.toggle('on', b.dataset.kind === k));
   document.getElementById('f-once').hidden = k !== 'once';
   document.getElementById('f-repeat').hidden = k !== 'repeat';
-  if (k === 'repeat' && !form.templateId && form.days.size === 0) {
+  if (k === 'repeat' && !taskForm.templateId && taskForm.days.size === 0) {
     const d = document.getElementById('f-date').value;
-    if (d && !document.getElementById('f-anytime').checked) { form.days.add(DAY_ABBR[parseDs(d).getDay()]); renderFormChips(); }
+    if (d && !document.getElementById('f-anytime').checked) { taskForm.days.add(DAY_ABBR[parseDs(d).getDay()]); renderFormChips(); }
   }
   syncOnceFields(); syncRepeatFields();
 }
@@ -1120,7 +1166,7 @@ async function submitTaskForm(){
   const btn = document.getElementById('f-save');
   btn.disabled = true;
   try {
-    if (form.kind === 'repeat') await saveTemplate(title);
+    if (taskForm.kind === 'repeat') await saveTemplate(title);
     else await saveOneOff(title);
     closeSheet('form-sheet');
   } catch (e) {
@@ -1134,14 +1180,14 @@ async function saveOneOff(title){
   let date = document.getElementById('f-date').value || todayStr();
   if (anytime) date = ds(mondayOf(parseDs(date)));
   const time = anytime ? '' : document.getElementById('f-time').value;
-  const existing = form.logId ? logCache.find(l => l.id === form.logId) : null;
+  const existing = taskForm.logId ? logCache.find(l => l.id === taskForm.logId) : null;
   if (existing) {
     const type = anytime ? 'Anytime' : (existing.Type === 'Anytime' ? (existing.TemplateId ? 'Moved' : 'OneOff') : existing.Type);
     const changedSlot = existing.Date !== date || (existing.Time || '') !== time;
-    await upsertTaskLog(fromLog(existing), { Title: title, Category: form.category, Date: date, Time: time, Type: type });
+    await upsertTaskLog(fromLog(existing), { Title: title, Category: taskForm.category, Date: date, Time: time, Type: type });
     if (changedSlot) clearCalendarEvent(existing);
   } else {
-    const fields = { Title: title, Category: form.category, Type: anytime ? 'Anytime' : 'OneOff', Date: date, Status: 'Pending', Time: time };
+    const fields = { Title: title, Category: taskForm.category, Type: anytime ? 'Anytime' : 'OneOff', Date: date, Status: 'Pending', Time: time };
     if (!navigator.onLine) { queueCreate(fields); showToast('Offline — saved, will sync when you reconnect.'); return; }
     const tmp = { id: 'tmp' + Math.random().toString(36).slice(2), ...fields };
     logCache.push(tmp); render();
@@ -1162,13 +1208,13 @@ function readRepeatForm(){
   if (f === 'md') return { r: { kind:'monthDay', day: parseInt(document.getElementById('f-mday').value, 10) }, days: [] };
   if (f === 'mn') return { r: { kind:'monthNth', nth: parseInt(document.getElementById('f-nth').value, 10), dow: document.getElementById('f-ndow').value }, days: [] };
   const n = parseInt(f.slice(1), 10);
-  return { r: { kind:'weeks', n, anchor: ds(mondayOf(parseDs(document.getElementById('f-anchor').value || todayStr()))) }, days: sortDays([...form.days]) };
+  return { r: { kind:'weeks', n, anchor: ds(mondayOf(parseDs(document.getElementById('f-anchor').value || todayStr()))) }, days: sortDays([...taskForm.days]) };
 }
 async function saveTemplate(title){
   const { r, days } = readRepeatForm();
   const repeat = serializeRepeat(r);
-  const existing = form.templateId ? templates.find(t => t.id === form.templateId) : null;
-  const fields = { Title: title, Category: form.category, Days: days, Time: document.getElementById('f-rtime').value || '', Active: existing ? existing.Active !== false : true };
+  const existing = taskForm.templateId ? templates.find(t => t.id === taskForm.templateId) : null;
+  const fields = { Title: title, Category: taskForm.category, Days: days, Time: document.getElementById('f-rtime').value || '', Active: existing ? existing.Active !== false : true };
   // Only touch Repeat when needed, so plain weekly tasks still work on bases without the field.
   if (repeat || (existing && existing.Repeat)) { await ensureRepeatField(); fields.Repeat = repeat; }
   if (existing) {
@@ -1185,7 +1231,7 @@ async function saveTemplate(title){
   if (CONFIG.googleCalendarEnabled) syncTodayCalendar();
 }
 async function togglePauseTemplate(){
-  const t = templates.find(x => x.id === form.templateId);
+  const t = templates.find(x => x.id === taskForm.templateId);
   if (!t) return;
   const active = t.Active === false;
   await run(async () => {
@@ -1196,7 +1242,7 @@ async function togglePauseTemplate(){
   });
 }
 async function deleteTemplate(){
-  const t = templates.find(x => x.id === form.templateId);
+  const t = templates.find(x => x.id === taskForm.templateId);
   if (!t || !confirm(`Delete “${t.Title}” for good? Past history stays in the Log.`)) return;
   await run(async () => {
     await atDelete(TEMPLATES_TABLE, t.id);
@@ -1264,6 +1310,7 @@ function openSettings(){
   updateCalendarStatus();
   renderTemplateList();
   renderCategoryList();
+  renderInstallSection();
   document.getElementById('repeat-field-status').textContent = CONFIG.repeatField === 'ok'
     ? 'Connected. Repeat field is set up.'
     : 'Connected. Fortnightly and monthly tasks will add a "Repeat" field to Templates the first time you make one (or add it yourself as single line text).';
