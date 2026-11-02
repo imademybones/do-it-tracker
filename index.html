@@ -2,12 +2,1454 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<meta http-equiv="refresh" content="0; url=accountability-tracker-v4.html">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>Do It</title>
-<link rel="canonical" href="accountability-tracker-v4.html">
+<link rel="manifest" href="manifest.json">
+<link rel="apple-touch-icon" href="icon-192.png">
+<link rel="icon" href="icon-192.png">
+<meta name="theme-color" content="#F7F6F3" media="(prefers-color-scheme: light)">
+<meta name="theme-color" content="#1B1D21" media="(prefers-color-scheme: dark)">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<script src="https://accounts.google.com/gsi/client" async defer></script>
+<style>
+  :root{
+    --bg:#F7F6F3; --surface:#FFFFFF; --surface-2:#F0EFEB; --border:#E4E2DC;
+    --text:#1E1F22; --text-dim:#6A6E75; --text-faint:#A3A6AB;
+    --accent:#C77A2A; --accent-ink:#FFFFFF; --danger:#C1483C; --today:#C77A2A;
+    --shadow:0 1px 2px rgba(0,0,0,.04), 0 4px 16px rgba(0,0,0,.05);
+    --overlay:rgba(20,20,22,.35);
+    --tint:15%;
+    color-scheme:light;
+  }
+  @media (prefers-color-scheme: dark){
+    :root:not([data-theme="light"]){
+      --bg:#1B1D21; --surface:#232629; --surface-2:#2A2E32; --border:#33373C;
+      --text:#EDEAE3; --text-dim:#9A9EA5; --text-faint:#62666C;
+      --accent:#D9933F; --accent-ink:#1B1D21; --today:#D9933F;
+      --shadow:none; --overlay:rgba(0,0,0,.6); --tint:24%;
+      color-scheme:dark;
+    }
+  }
+  :root[data-theme="dark"]{
+    --bg:#1B1D21; --surface:#232629; --surface-2:#2A2E32; --border:#33373C;
+    --text:#EDEAE3; --text-dim:#9A9EA5; --text-faint:#62666C;
+    --accent:#D9933F; --accent-ink:#1B1D21; --today:#D9933F;
+    --shadow:none; --overlay:rgba(0,0,0,.6); --tint:24%;
+    color-scheme:dark;
+  }
+  *{box-sizing:border-box;}
+  html,body{margin:0;}
+  body{background:var(--bg);color:var(--text);font:14px/1.4 'Inter',system-ui,sans-serif;
+    -webkit-font-smoothing:antialiased;font-variant-numeric:tabular-nums;padding-bottom:96px;}
+  button{font:inherit;color:inherit;cursor:pointer;}
+  input,select{font:inherit;color:inherit;}
+  [hidden]{display:none !important;}
+
+  /* ---------- Setup ---------- */
+  #setup{max-width:520px;margin:0 auto;padding:40px 16px 60px;}
+  #setup h1{font-size:28px;margin:0 0 6px;letter-spacing:-.01em;}
+  #setup p{color:var(--text-dim);line-height:1.55;}
+  .steps{background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:16px 16px 16px 34px;margin:18px 0;color:var(--text-dim);font-size:13.5px;line-height:1.7;}
+  .steps code{background:var(--surface-2);padding:1px 5px;border-radius:4px;font-size:12.5px;color:var(--text);}
+
+  /* ---------- Form bits ---------- */
+  .field{margin-bottom:14px;}
+  .field > label, .label{display:block;font-size:11.5px;font-weight:600;text-transform:uppercase;letter-spacing:.07em;color:var(--text-dim);margin-bottom:6px;}
+  .input{width:100%;background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:10px 12px;font-size:15px;}
+  .input:focus{outline:none;border-color:var(--accent);}
+  .row{display:flex;gap:10px;align-items:center;}
+  .row > *{flex:1;min-width:0;}
+  .hint{font-size:12.5px;color:var(--text-dim);margin-top:6px;}
+  .btn{display:inline-flex;align-items:center;justify-content:center;gap:6px;border:1px solid transparent;
+    background:var(--accent);color:var(--accent-ink);padding:10px 16px;border-radius:8px;font-weight:600;font-size:14px;}
+  .btn:active{transform:translateY(1px);}
+  .btn.secondary{background:var(--surface);border-color:var(--border);color:var(--text);}
+  .btn.ghost{background:transparent;color:var(--text-dim);padding:8px 10px;}
+  .btn.danger{background:transparent;border-color:var(--danger);color:var(--danger);}
+  .btn.block{width:100%;}
+  .btn:disabled{opacity:.45;}
+  .error{background:color-mix(in srgb,var(--danger) 12%,transparent);border:1px solid var(--danger);color:var(--danger);padding:10px 12px;border-radius:8px;font-size:13px;margin-bottom:14px;}
+
+  .chips{display:flex;flex-wrap:wrap;gap:6px;}
+  .chip{display:inline-flex;align-items:center;gap:6px;border:1px solid var(--border);background:var(--surface);
+    padding:6px 11px;border-radius:999px;font-size:13px;font-weight:500;color:var(--text);}
+  .chip .dot{width:8px;height:8px;border-radius:50%;background:var(--c,var(--text-faint));}
+  .chip.on{background:color-mix(in srgb,var(--c,var(--accent)) var(--tint),var(--surface));border-color:var(--c,var(--accent));}
+  .seg{display:inline-flex;background:var(--surface-2);border-radius:9px;padding:3px;gap:2px;}
+  .seg button{border:none;background:transparent;padding:6px 12px;border-radius:7px;font-size:13px;font-weight:500;color:var(--text-dim);}
+  .seg button.on{background:var(--surface);color:var(--text);box-shadow:var(--shadow);}
+
+  /* ---------- Top bar ---------- */
+  .top{position:sticky;top:0;z-index:5;background:color-mix(in srgb,var(--bg) 92%,transparent);backdrop-filter:blur(8px);
+    padding:calc(12px + env(safe-area-inset-top)) 16px 10px;border-bottom:1px solid var(--border);}
+  .top-inner{max-width:1280px;margin:0 auto;display:flex;align-items:center;gap:12px;flex-wrap:wrap;}
+  .title-block{flex:1;min-width:150px;}
+  .title-block h1{margin:0;font-size:20px;font-weight:700;letter-spacing:-.01em;}
+  .progress{display:flex;align-items:center;gap:8px;margin-top:4px;font-size:12.5px;color:var(--text-dim);}
+  .bar{width:90px;height:4px;border-radius:2px;background:var(--surface-2);overflow:hidden;}
+  .bar i{display:block;height:100%;background:var(--accent);border-radius:2px;transition:width .3s;}
+  .nav{display:flex;align-items:center;gap:6px;}
+  .icon-btn{width:34px;height:34px;border-radius:8px;border:1px solid var(--border);background:var(--surface);
+    display:inline-flex;align-items:center;justify-content:center;font-size:16px;color:var(--text-dim);}
+  .icon-btn:hover{color:var(--text);}
+  .today-btn{height:34px;padding:0 12px;border-radius:8px;border:1px solid var(--border);background:var(--surface);font-size:13px;font-weight:600;}
+  .filters{max-width:1280px;margin:10px auto 0;display:flex;gap:6px;overflow-x:auto;scrollbar-width:none;}
+  .filters::-webkit-scrollbar{display:none;}
+  .filters .chip{flex-shrink:0;padding:4px 10px;font-size:12.5px;}
+
+  main{max-width:1280px;margin:0 auto;padding:14px 16px 0;}
+  .banner{background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:12px 14px;margin-bottom:14px;
+    display:flex;align-items:center;gap:12px;flex-wrap:wrap;}
+  .banner p{margin:0;flex:1;min-width:200px;color:var(--text-dim);}
+  .banner b{color:var(--text);}
+
+  /* ---------- Week view ---------- */
+  .week-wrap{display:flex;flex-direction:column;gap:12px;}
+  .week{display:grid;grid-template-columns:repeat(7,minmax(0,1fr));gap:8px;}
+  .day{background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:8px;min-height:240px;
+    display:flex;flex-direction:column;gap:6px;transition:border-color .15s, background .15s;}
+  .day.past{background:color-mix(in srgb,var(--surface) 60%,var(--bg));}
+  .day.today{border-color:var(--today);box-shadow:inset 0 0 0 1px var(--today);}
+  .day.drop, .tray.drop{border-color:var(--accent);background:color-mix(in srgb,var(--accent) 8%,var(--surface));}
+  .day-h{display:flex;align-items:baseline;gap:6px;padding:2px 2px 4px;}
+  .day-h .dow{font-size:11.5px;font-weight:600;text-transform:uppercase;letter-spacing:.07em;color:var(--text-dim);}
+  .day-h .num{font-size:18px;font-weight:700;}
+  .day.today .num{color:var(--today);}
+  .day-h .add{margin-left:auto;border:none;background:transparent;color:var(--text-faint);font-size:18px;line-height:1;padding:0 4px;border-radius:6px;opacity:0;transition:opacity .15s;}
+  .day:hover .add, .day .add:focus{opacity:1;}
+  .day-h .add:hover{color:var(--accent);}
+  .tasks{display:flex;flex-direction:column;gap:5px;}
+  .empty-day{font-size:12px;color:var(--text-faint);padding:2px;}
+
+  .pill{--c:var(--text-faint);display:flex;align-items:flex-start;gap:7px;padding:6px 8px;border-radius:8px;
+    background:color-mix(in srgb,var(--c) var(--tint),var(--surface));border:1px solid color-mix(in srgb,var(--c) 30%,transparent);
+    font-size:13px;line-height:1.3;cursor:pointer;user-select:none;-webkit-user-select:none;text-align:left;width:100%;}
+  .pill:hover{border-color:var(--c);}
+  .pill.dragging{opacity:.4;}
+  .check{flex-shrink:0;width:16px;height:16px;margin-top:1px;border-radius:50%;border:2px solid var(--c);background:transparent;padding:0;
+    display:inline-flex;align-items:center;justify-content:center;font-size:10px;color:#fff;line-height:1;}
+  .pill .ttl{flex:1;min-width:0;overflow-wrap:anywhere;font-weight:500;}
+  .pill .meta{flex-shrink:0;font-size:11px;color:var(--text-dim);margin-top:1px;white-space:nowrap;}
+  .pill.done{opacity:.55;}
+  .pill.done .ttl{text-decoration:line-through;}
+  .pill.done .check{background:var(--c);}
+  .pill.skipped{opacity:.45;background:transparent;border-style:dashed;}
+  .pill.skipped .ttl{text-decoration:line-through;}
+  .pill.missed .check{border-style:dashed;}
+
+  .tray{background:var(--surface);border:1px dashed var(--border);border-radius:12px;padding:10px 10px 12px;}
+  .tray-h{display:flex;align-items:center;gap:8px;font-size:11.5px;font-weight:600;text-transform:uppercase;letter-spacing:.07em;color:var(--text-dim);margin-bottom:8px;}
+  .tray-h .add{margin-left:auto;border:none;background:transparent;color:var(--text-dim);font-size:12px;font-weight:600;text-transform:none;letter-spacing:0;}
+  .tray-h .add:hover{color:var(--accent);}
+  .tray .tasks{flex-direction:row;flex-wrap:wrap;}
+  .tray .pill{width:auto;max-width:100%;}
+  .tray.overdue{border-color:color-mix(in srgb,var(--danger) 45%,transparent);border-style:solid;}
+  .tray.overdue .tray-h{color:var(--danger);}
+
+  /* ---------- Month view ---------- */
+  .month{display:grid;grid-template-columns:repeat(7,minmax(0,1fr));border:1px solid var(--border);border-radius:12px;overflow:hidden;background:var(--border);gap:1px;}
+  .month .mh{background:var(--surface-2);font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:.07em;color:var(--text-dim);padding:6px 8px;}
+  .mcell{background:var(--surface);min-height:108px;padding:6px;border:none;text-align:left;display:flex;flex-direction:column;gap:3px;}
+  .mcell:hover{background:color-mix(in srgb,var(--accent) 6%,var(--surface));}
+  .mcell.out{background:var(--bg);}
+  .mcell.out .mnum{color:var(--text-faint);}
+  .mnum{font-size:12.5px;font-weight:600;align-self:flex-start;min-width:22px;height:22px;border-radius:11px;display:inline-flex;align-items:center;justify-content:center;padding:0 4px;}
+  .mcell.today .mnum{background:var(--today);color:var(--accent-ink);}
+  .mini{--c:var(--text-faint);display:block;font-size:11.5px;line-height:1.25;padding:2px 6px;border-radius:5px;
+    background:color-mix(in srgb,var(--c) var(--tint),var(--surface));white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+  .mini.done{opacity:.5;text-decoration:line-through;}
+  .more{font-size:11px;color:var(--text-dim);padding-left:4px;}
+  .dots{display:none;flex-wrap:wrap;gap:3px;}
+  .dots i{width:6px;height:6px;border-radius:50%;background:var(--c);}
+  .dots i.done{opacity:.35;}
+
+  /* ---------- FAB / toast ---------- */
+  .fab{position:fixed;right:20px;bottom:calc(20px + env(safe-area-inset-bottom));width:54px;height:54px;border-radius:50%;border:none;
+    background:var(--accent);color:var(--accent-ink);font-size:28px;line-height:1;box-shadow:0 6px 20px rgba(0,0,0,.18);z-index:6;}
+  .toast{position:fixed;left:50%;bottom:calc(90px + env(safe-area-inset-bottom));transform:translateX(-50%);max-width:calc(100% - 32px);
+    background:var(--text);color:var(--bg);padding:10px 16px;border-radius:10px;font-size:13.5px;z-index:40;display:none;box-shadow:0 6px 20px rgba(0,0,0,.2);}
+  .toast button{background:none;border:none;color:var(--accent);font-weight:700;margin-left:10px;}
+
+  /* ---------- Sheets ---------- */
+  .overlay{display:none;position:fixed;inset:0;background:var(--overlay);z-index:30;align-items:flex-end;justify-content:center;}
+  .overlay.open{display:flex;}
+  .sheet{background:var(--bg);width:100%;max-width:520px;max-height:92vh;overflow:auto;border-radius:16px 16px 0 0;
+    padding:18px 16px calc(20px + env(safe-area-inset-bottom));}
+  @media (min-width:640px){ .overlay{align-items:center;} .sheet{border-radius:16px;} }
+  .sheet-h{display:flex;align-items:center;gap:10px;margin-bottom:14px;}
+  .sheet-h h2{margin:0;font-size:18px;flex:1;}
+  .actions{display:flex;gap:8px;flex-wrap:wrap;margin-top:16px;}
+  .actions .btn{flex:1;min-width:120px;}
+  .detail-meta{display:flex;flex-wrap:wrap;gap:8px;align-items:center;color:var(--text-dim);font-size:13px;margin-bottom:6px;}
+  .detail-title{font-size:20px;font-weight:600;margin:4px 0 8px;overflow-wrap:anywhere;}
+  .section{border-top:1px solid var(--border);padding-top:14px;margin-top:16px;}
+  .section h3{font-size:12px;text-transform:uppercase;letter-spacing:.07em;color:var(--text-dim);margin:0 0 10px;}
+  .list-row{display:flex;align-items:center;gap:10px;padding:9px 10px;border:1px solid var(--border);background:var(--surface);border-radius:9px;margin-bottom:6px;width:100%;text-align:left;}
+  .list-row .dot{width:9px;height:9px;border-radius:50%;background:var(--c);flex-shrink:0;}
+  .list-row .main{flex:1;min-width:0;}
+  .list-row .sub{font-size:12px;color:var(--text-dim);}
+  .list-row.paused{opacity:.5;}
+  .switch{width:42px;height:24px;border-radius:14px;background:var(--surface-2);border:1px solid var(--border);position:relative;flex:0 0 42px;padding:0;}
+  .switch i{position:absolute;top:2px;left:2px;width:18px;height:18px;border-radius:50%;background:var(--text-faint);transition:.2s;}
+  .switch.on{background:color-mix(in srgb,var(--accent) 30%,transparent);border-color:var(--accent);}
+  .switch.on i{left:20px;background:var(--accent);}
+  .starter{display:flex;align-items:center;gap:10px;padding:8px 4px;border-bottom:1px solid var(--border);}
+  .starter input{width:18px;height:18px;accent-color:var(--accent);}
+  .starter .main{flex:1;}
+  .starter .sub{font-size:12px;color:var(--text-dim);}
+  .starter.added{opacity:.5;}
+
+  /* ---------- Mobile ---------- */
+  @media (max-width:760px){
+    .week-wrap .tray.anytime{order:-1;}
+    .week-wrap .tray.overdue{order:-2;}
+    .week{grid-template-columns:1fr;gap:0;background:var(--surface);border:1px solid var(--border);border-radius:12px;overflow:hidden;}
+    .day{flex-direction:row;align-items:flex-start;min-height:0;border:none;border-radius:0;border-bottom:1px solid var(--border);padding:10px;gap:10px;}
+    .day:last-child{border-bottom:none;}
+    .day.today{box-shadow:inset 3px 0 0 var(--today);}
+    .day-h{flex-direction:column;align-items:center;gap:0;width:40px;flex-shrink:0;padding:0;}
+    .day-h .add{display:none;}
+    .day .tasks{flex:1;min-width:0;}
+    .empty-day{padding:8px 0;}
+    .pill{font-size:14px;padding:8px 10px;}
+    .mcell{min-height:58px;padding:4px;}
+    .mini, .more{display:none;}
+    .dots{display:flex;}
+    .title-block h1{font-size:18px;}
+    .bar{width:60px;}
+  }
+</style>
 </head>
 <body>
-<p>Redirecting to <a href="accountability-tracker-v4.html">Do It</a>&hellip;</p>
-<script>location.replace('accountability-tracker-v4.html');</script>
+
+<!-- ============ SETUP ============ -->
+<div id="setup" hidden>
+  <h1>Do It</h1>
+  <p>A week-at-a-glance to-do list. Repeating chores show up on their own, one-offs go on a day or in the &ldquo;anytime this week&rdquo; tray, and everything is colour-coded by category.</p>
+  <div id="setup-error"></div>
+  <ol class="steps">
+    <li>Create an Airtable base with two tables: <code>Templates</code> and <code>Log</code>. (Already using Do It v4? Just reuse the same base.)</li>
+    <li><b>Templates</b>: <code>Title</code> (text), <code>Category</code> (single select), <code>Days</code> (multiple select Mon&ndash;Sun), <code>Time</code> (text), <code>Active</code> (checkbox), <code>Repeat</code> (text).</li>
+    <li><b>Log</b>: <code>Title</code>, <code>Category</code>, <code>Type</code>, <code>TemplateId</code>, <code>Date</code>, <code>Time</code>, <code>Status</code>, <code>CompletedAt</code>, <code>Notes</code>, <code>CalendarEventId</code> (all text).</li>
+    <li>Create a Personal Access Token at airtable.com/create/tokens with <code>data.records:read</code> and <code>data.records:write</code> on that base. Add <code>schema.bases:read</code> + <code>schema.bases:write</code> too and the app will add the <code>Repeat</code> field for you.</li>
+  </ol>
+  <div class="field"><label for="in-base">Airtable base ID</label><input class="input" id="in-base" placeholder="appXXXXXXXXXXXXXX" autocomplete="off"></div>
+  <div class="field"><label for="in-pat">Personal access token</label><input class="input" id="in-pat" type="password" placeholder="patXXXXXXXXXXXXXX" autocomplete="off"></div>
+  <button class="btn block" onclick="saveSetup()">Connect</button>
+</div>
+
+<!-- ============ APP ============ -->
+<div id="app" hidden>
+  <header class="top">
+    <div class="top-inner">
+      <div class="title-block">
+        <h1 id="range-title"></h1>
+        <div class="progress" id="progress"></div>
+      </div>
+      <div class="nav">
+        <button class="icon-btn" onclick="shift(-1)" aria-label="Previous">&#8249;</button>
+        <button class="today-btn" onclick="goToday()">Today</button>
+        <button class="icon-btn" onclick="shift(1)" aria-label="Next">&#8250;</button>
+      </div>
+      <div class="nav">
+        <div class="seg" id="view-seg">
+          <button data-view="week" onclick="setView('week')">Week</button>
+          <button data-view="month" onclick="setView('month')">Month</button>
+        </div>
+        <button class="icon-btn" onclick="manualRefresh()" aria-label="Refresh" title="Refresh">&#8635;</button>
+        <button class="icon-btn" onclick="openSettings()" aria-label="Settings" title="Settings">&#9881;</button>
+      </div>
+    </div>
+    <div class="filters" id="filters"></div>
+  </header>
+  <main>
+    <div id="banner"></div>
+    <div id="view"></div>
+  </main>
+  <button class="fab" onclick="openTaskForm({})" aria-label="Add task">+</button>
+</div>
+<div class="toast" id="toast"></div>
+
+<!-- ============ TASK DETAIL ============ -->
+<div class="overlay" id="detail-sheet" onclick="if(event.target===this)closeSheet('detail-sheet')">
+  <div class="sheet" role="dialog" aria-modal="true">
+    <div class="sheet-h"><div class="detail-meta" id="detail-meta" style="flex:1;margin:0"></div><button class="btn ghost" onclick="closeSheet('detail-sheet')">Close</button></div>
+    <div class="detail-title" id="detail-title"></div>
+    <div class="detail-meta" id="detail-when"></div>
+    <div class="actions" id="detail-actions"></div>
+    <div class="section">
+      <h3>Move to</h3>
+      <div class="row">
+        <input class="input" type="date" id="move-date">
+        <button class="btn secondary" style="flex:0 0 auto" onclick="detailMoveTo()">Move</button>
+      </div>
+      <div class="chips" style="margin-top:10px" id="move-quick"></div>
+    </div>
+  </div>
+</div>
+
+<!-- ============ TASK FORM (one-off + repeating) ============ -->
+<div class="overlay" id="form-sheet" onclick="if(event.target===this)closeSheet('form-sheet')">
+  <div class="sheet" role="dialog" aria-modal="true">
+    <div class="sheet-h"><h2 id="form-title">Add a task</h2><button class="btn ghost" onclick="closeSheet('form-sheet')">Close</button></div>
+    <div class="field"><label for="f-title">What needs doing</label><input class="input" id="f-title" placeholder="e.g. Take the bins out" onkeydown="if(event.key==='Enter')submitTaskForm()"></div>
+    <div class="field"><span class="label">Category</span><div class="chips" id="f-cats"></div></div>
+    <div class="field" id="f-kind-wrap"><div class="seg" id="f-kind">
+      <button data-kind="once" onclick="setFormKind('once')">One-off</button>
+      <button data-kind="repeat" onclick="setFormKind('repeat')">Repeats</button>
+    </div></div>
+
+    <div id="f-once">
+      <div class="row field">
+        <div><label class="label" for="f-date">Date</label><input class="input" type="date" id="f-date"></div>
+        <div><label class="label" for="f-time">Time (optional)</label><input class="input" type="time" id="f-time"></div>
+      </div>
+      <label class="row" style="gap:8px;justify-content:flex-start;margin:-4px 0 4px;font-size:13.5px">
+        <input type="checkbox" id="f-anytime" style="flex:0 0 auto;width:16px;height:16px;accent-color:var(--accent)" onchange="syncOnceFields()">
+        <span style="flex:0 1 auto">Anytime that week (no fixed day)</span>
+      </label>
+    </div>
+
+    <div id="f-repeat">
+      <div class="field">
+        <label class="label" for="f-freq">How often</label>
+        <select class="input" id="f-freq" onchange="syncRepeatFields()">
+          <option value="w1">Every week</option>
+          <option value="w2">Every fortnight</option>
+          <option value="w3">Every 3 weeks</option>
+          <option value="w4">Every 4 weeks</option>
+          <option value="md">Monthly, on a date</option>
+          <option value="mn">Monthly, on a weekday</option>
+        </select>
+      </div>
+      <div class="field" id="f-days-wrap">
+        <span class="label">On</span>
+        <div class="chips" id="f-days"></div>
+        <div class="hint">Pick no days to make it an &ldquo;anytime that week&rdquo; task.</div>
+      </div>
+      <div class="field" id="f-anchor-wrap">
+        <label class="label" for="f-anchor">First week</label>
+        <input class="input" type="date" id="f-anchor">
+        <div class="hint">Any date in the first week it should happen. It then repeats from there.</div>
+      </div>
+      <div class="field" id="f-mday-wrap">
+        <label class="label" for="f-mday">Day of month</label>
+        <select class="input" id="f-mday"></select>
+      </div>
+      <div class="row field" id="f-mnth-wrap">
+        <select class="input" id="f-nth" aria-label="Which week">
+          <option value="1">1st</option><option value="2">2nd</option><option value="3">3rd</option><option value="4">4th</option><option value="-1">Last</option>
+        </select>
+        <select class="input" id="f-ndow" aria-label="Weekday"></select>
+      </div>
+      <div class="field"><label class="label" for="f-rtime">Time (optional)</label><input class="input" type="time" id="f-rtime"></div>
+    </div>
+
+    <div id="form-error"></div>
+    <div class="actions">
+      <button class="btn" id="f-save" onclick="submitTaskForm()">Save</button>
+    </div>
+    <div class="actions" id="form-extra"></div>
+  </div>
+</div>
+
+<!-- ============ STARTERS ============ -->
+<div class="overlay" id="starter-sheet" onclick="if(event.target===this)closeSheet('starter-sheet')">
+  <div class="sheet" role="dialog" aria-modal="true">
+    <div class="sheet-h"><h2>Starter repeating tasks</h2><button class="btn ghost" onclick="closeSheet('starter-sheet')">Close</button></div>
+    <p class="hint" style="margin-top:-6px">Tick the ones you want. You can edit or delete any of them afterwards.</p>
+    <div id="starter-list"></div>
+    <div class="actions"><button class="btn" id="starter-add" onclick="addStarters()">Add selected</button></div>
+  </div>
+</div>
+
+<!-- ============ SETTINGS ============ -->
+<div class="overlay" id="settings-sheet" onclick="if(event.target===this)closeSheet('settings-sheet')">
+  <div class="sheet" role="dialog" aria-modal="true">
+    <div class="sheet-h"><h2>Settings</h2><button class="btn ghost" onclick="closeSheet('settings-sheet')">Close</button></div>
+
+    <div class="row" style="justify-content:space-between">
+      <span class="label" style="margin:0;flex:0 0 auto">Appearance</span>
+      <div class="seg" id="theme-seg" style="flex:0 0 auto">
+        <button data-theme="auto" onclick="setTheme('auto')">Auto</button>
+        <button data-theme="light" onclick="setTheme('light')">Light</button>
+        <button data-theme="dark" onclick="setTheme('dark')">Dark</button>
+      </div>
+    </div>
+
+    <div class="section">
+      <h3>Repeating tasks</h3>
+      <div id="tpl-list"></div>
+      <div class="actions" style="margin-top:8px">
+        <button class="btn secondary" onclick="openTaskForm({kind:'repeat'})">+ New repeating task</button>
+        <button class="btn secondary" onclick="openStarters()">Add starter tasks</button>
+      </div>
+    </div>
+
+    <div class="section">
+      <h3>Categories</h3>
+      <div class="chips" id="cat-list"></div>
+      <div class="row" style="margin-top:10px">
+        <input class="input" id="new-cat" placeholder="New category" onkeydown="if(event.key==='Enter')addCategory()">
+        <button class="btn secondary" style="flex:0 0 auto" onclick="addCategory()">Add</button>
+      </div>
+    </div>
+
+    <div class="section">
+      <h3>Reminders</h3>
+      <div class="row" style="justify-content:space-between">
+        <div style="flex:1"><div>Notifications</div><div class="hint" style="margin:0">A ping when a timed task is due, plus a morning summary. Works while the app is open.</div></div>
+        <button class="switch" id="notif-switch" onclick="toggleNotifications()" aria-label="Toggle notifications"><i></i></button>
+      </div>
+      <div class="row" style="margin-top:10px"><label for="digest-time" style="flex:1">Morning summary at</label><input class="input" type="time" id="digest-time" style="flex:0 0 130px"></div>
+    </div>
+
+    <div class="section">
+      <h3>Google Calendar</h3>
+      <div class="hint" style="margin:0 0 8px">Today&rsquo;s timed tasks are copied to your calendar with a popup reminder.</div>
+      <div class="row"><input class="input" id="gcal-client-id" placeholder="OAuth Client ID"><button class="btn secondary" style="flex:0 0 auto" onclick="connectGoogleCalendar()">Connect</button></div>
+      <div class="hint" id="gcal-status"></div>
+    </div>
+
+    <div class="section">
+      <h3>Airtable</h3>
+      <div class="hint" id="repeat-field-status" style="margin:0 0 10px"></div>
+      <button class="btn danger block" onclick="disconnectSetup()">Disconnect this device</button>
+    </div>
+  </div>
+</div>
+
+<script>
+/* ============================================================
+   CONSTANTS & STATE
+   ============================================================ */
+const BUILTIN_CATEGORIES = [
+  {key:'Gym',      color:'#D9822B'},
+  {key:'Chores',   color:'#2F9E8F'},
+  {key:'Dog',      color:'#A07C4F'},
+  {key:'Wife Ask', color:'#D2504A'},
+  {key:'Study',    color:'#4D7CC9'},
+  {key:'Admin',    color:'#8E6CC4'},
+  {key:'Other',    color:'#7D828A'},
+];
+const CUSTOM_PALETTE = ['#C2549B','#5FA85A','#C9A227','#3A9BC1','#B5654A','#6F7BD1'];
+const DAY_ABBR = ['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];
+const WEEK_DAYS = ['Mon','Tue','Wed','Thu','Fri','Sat','Sun'];
+const MONTHS = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+const TEMPLATES_TABLE = 'Templates';
+const LOG_TABLE = 'Log';
+const DEFAULT_ANCHOR = '2026-01-05'; // a Monday; used for old fortnightly rules with no anchor
+const ONE_OFF_TYPES = ['OneOff','QuickCapture','Moved'];
+
+const STARTERS = [
+  {Title:'Gym session',              Category:'Gym',    Days:['Mon','Wed','Fri'], Time:'06:00', Repeat:''},
+  {Title:'Walk the dog',             Category:'Dog',    Days:WEEK_DAYS.slice(),   Time:'',      Repeat:''},
+  {Title:'Bins out',                 Category:'Chores', Days:['Tue'],             Time:'19:00', Repeat:''},
+  {Title:'Recycling bin out',        Category:'Chores', Days:['Tue'],             Time:'19:00', Repeat:'fortnight'},
+  {Title:'Change the bed sheets',    Category:'Chores', Days:['Sun'],             Time:'',      Repeat:''},
+  {Title:'Vacuum & mop',             Category:'Chores', Days:[],                  Time:'',      Repeat:''},
+  {Title:'Clean the bathroom',       Category:'Chores', Days:[],                  Time:'',      Repeat:'fortnight'},
+  {Title:'Mow the lawn',             Category:'Chores', Days:['Sat'],             Time:'',      Repeat:'fortnight'},
+  {Title:'Groceries & meal plan',    Category:'Other',  Days:['Sun'],             Time:'',      Repeat:''},
+  {Title:'Wash the dog',             Category:'Dog',    Days:[],                  Time:'',      Repeat:'fortnight'},
+  {Title:'Flea & worm treatment',    Category:'Dog',    Days:[],                  Time:'',      Repeat:'monthly:day:1'},
+  {Title:'Study block',              Category:'Study',  Days:['Tue','Thu'],       Time:'20:00', Repeat:''},
+  {Title:'Pay bills & check budget', Category:'Admin',  Days:[],                  Time:'',      Repeat:'monthly:nth:1:Mon'},
+  {Title:'Plan next week',           Category:'Other',  Days:['Sun'],             Time:'18:00', Repeat:''},
+];
+
+let CONFIG = readJSON('at_config', null);
+let templates = [];
+let logCache = [];
+let view = readLS('doit_view') || 'week';
+let cursor = new Date();           // any date inside the displayed week/month
+let filterCat = null;
+let taskIndex = {};
+let detailTask = null;
+let form = {};
+let notifiedToday = readJSON('at_notified', {});
+let offlineQueue = readJSON('at_queue', []);
+let lastLoad = 0;
+let gTokenClient = null, gAccessToken = null, gTokenExpiry = 0;
+
+function readLS(k){ try { return localStorage.getItem(k); } catch(e){ return null; } }
+function writeLS(k, v){ try { localStorage.setItem(k, v); } catch(e){} }
+function readJSON(k, fallback){ try { const v = JSON.parse(readLS(k) || 'null'); return v == null ? fallback : v; } catch(e){ return fallback; } }
+function saveConfig(){ writeLS('at_config', JSON.stringify(CONFIG)); }
+
+/* ============================================================
+   DATE + REPEAT HELPERS
+   ============================================================ */
+function ds(d){ return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`; }
+function parseDs(s){ const [y,m,d] = String(s).split('-').map(Number); return new Date(y, (m||1)-1, d||1); }
+function addDays(d, n){ const c = new Date(d.getFullYear(), d.getMonth(), d.getDate()); c.setDate(c.getDate()+n); return c; }
+function mondayOf(d){ const c = new Date(d.getFullYear(), d.getMonth(), d.getDate()); c.setDate(c.getDate() - (c.getDay()+6)%7); return c; }
+function weeksBetween(a, b){ return Math.round((mondayOf(b) - mondayOf(a)) / (7*864e5)); }
+function daysInMonth(d){ return new Date(d.getFullYear(), d.getMonth()+1, 0).getDate(); }
+function todayStr(){ return ds(new Date()); }
+function ordinal(n){ const s = ['th','st','nd','rd'], v = n % 100; return n + (s[(v-20)%10] || s[v] || s[0]); }
+function prettyDate(s){ const d = parseDs(s); return `${DAY_ABBR[d.getDay()]} ${d.getDate()} ${MONTHS[d.getMonth()]}`; }
+function sortDays(days){ return WEEK_DAYS.filter(d => (days||[]).includes(d)); }
+
+// Repeat rule stored in Templates.Repeat (text). Blank = weekly (v4 behaviour).
+//   weeks:N:YYYY-MM-DD   every N weeks counting from the week containing that date
+//   monthly:day:D        day D of each month (clamped to month length)
+//   monthly:nth:N:Dow    Nth weekday of the month (N = -1 for last)
+function parseRepeat(s){
+  s = String(s || '').trim();
+  const p = s.split(':');
+  if (p[0] === 'weeks') return { kind:'weeks', n: Math.max(1, parseInt(p[1],10) || 1), anchor: p[2] || DEFAULT_ANCHOR };
+  if (p[0] === 'fortnightly') return { kind:'weeks', n:2, anchor: p[1] || DEFAULT_ANCHOR };
+  if (p[0] === 'monthly' && p[1] === 'day') return { kind:'monthDay', day: Math.min(31, Math.max(1, parseInt(p[2],10) || 1)) };
+  if (p[0] === 'monthly' && p[1] === 'nth') return { kind:'monthNth', nth: parseInt(p[2],10) || 1, dow: DAY_ABBR.includes(p[3]) ? p[3] : 'Mon' };
+  return { kind:'weeks', n:1, anchor:DEFAULT_ANCHOR };
+}
+function serializeRepeat(r){
+  if (r.kind === 'weeks') return r.n <= 1 ? '' : `weeks:${r.n}:${r.anchor}`;
+  if (r.kind === 'monthDay') return `monthly:day:${r.day}`;
+  return `monthly:nth:${r.nth}:${r.dow}`;
+}
+function weekMatches(r, d){
+  if (r.n <= 1) return true;
+  const w = weeksBetween(parseDs(r.anchor), d);
+  return ((w % r.n) + r.n) % r.n === 0;
+}
+function isAnytimeTemplate(t){ return parseRepeat(t.Repeat).kind === 'weeks' && !(t.Days && t.Days.length); }
+function occursOn(t, d){
+  const r = parseRepeat(t.Repeat), dow = DAY_ABBR[d.getDay()];
+  if (r.kind === 'weeks') return (t.Days || []).includes(dow) && weekMatches(r, d);
+  if (r.kind === 'monthDay') return d.getDate() === Math.min(r.day, daysInMonth(d));
+  if (dow !== r.dow) return false;
+  return r.nth === -1 ? d.getDate() + 7 > daysInMonth(d) : Math.ceil(d.getDate()/7) === r.nth;
+}
+function repeatLabel(t){
+  const r = parseRepeat(t.Repeat), days = sortDays(t.Days);
+  const dayTxt = days.length === 7 ? 'every day' : days.length === 5 && !days.includes('Sat') && !days.includes('Sun') ? 'weekdays' : days.join(', ');
+  if (r.kind === 'weeks') {
+    const freq = r.n === 1 ? 'Weekly' : r.n === 2 ? 'Fortnightly' : `Every ${r.n} weeks`;
+    if (!days.length) return `${freq} · any day`;
+    if (r.n === 1 && days.length === 7) return 'Every day';
+    return `${freq} · ${dayTxt}`;
+  }
+  if (r.kind === 'monthDay') return `Monthly · ${ordinal(r.day)}`;
+  return `Monthly · ${r.nth === -1 ? 'last' : ordinal(r.nth)} ${r.dow}`;
+}
+
+/* ============================================================
+   CATEGORIES & THEME
+   ============================================================ */
+function getCategories(){
+  const custom = (CONFIG && CONFIG.customCategories) || [];
+  return BUILTIN_CATEGORIES.concat(custom.filter(n => !BUILTIN_CATEGORIES.some(b => b.key === n))
+    .map((name, i) => ({ key:name, color: CUSTOM_PALETTE[i % CUSTOM_PALETTE.length], custom:true })));
+}
+function catColor(cat){ const c = getCategories().find(x => x.key === cat); return c ? c.color : '#7D828A'; }
+function applyTheme(){
+  const t = (CONFIG && CONFIG.theme) || 'auto';
+  if (t === 'auto') document.documentElement.removeAttribute('data-theme');
+  else document.documentElement.setAttribute('data-theme', t);
+  document.querySelectorAll('#theme-seg button').forEach(b => b.classList.toggle('on', b.dataset.theme === t));
+}
+function setTheme(t){ CONFIG.theme = t; saveConfig(); applyTheme(); }
+
+/* ============================================================
+   INIT
+   ============================================================ */
+window.addEventListener('DOMContentLoaded', () => {
+  if ('serviceWorker' in navigator) navigator.serviceWorker.register('sw.js').catch(() => {});
+  applyTheme();
+  if (CONFIG && CONFIG.baseId && CONFIG.pat) {
+    document.getElementById('app').hidden = false;
+    document.getElementById('digest-time').value = CONFIG.digestTime || '07:30';
+    render();
+    boot();
+  } else {
+    document.getElementById('setup').hidden = false;
+  }
+});
+document.addEventListener('visibilitychange', () => {
+  if (document.visibilityState === 'visible' && CONFIG && CONFIG.pat && Date.now() - lastLoad > 5*60*1000) manualRefresh(true);
+});
+window.addEventListener('online', () => { if (CONFIG && CONFIG.pat) flushQueue(); });
+document.addEventListener('keydown', (e) => {
+  if (e.key === 'Escape') document.querySelectorAll('.overlay.open').forEach(o => o.classList.remove('open'));
+});
+
+async function boot(){
+  try {
+    await loadData();
+    await flushQueue();
+    render();
+    startReminderLoop();
+    if (CONFIG.googleClientId) initGoogleClient();
+    if (CONFIG.googleCalendarEnabled) syncTodayCalendar();
+  } catch (e) {
+    console.error(e);
+    showToast('Could not load from Airtable' + errSuffix(e));
+  }
+}
+
+function saveSetup(){
+  const baseId = document.getElementById('in-base').value.trim();
+  const pat = document.getElementById('in-pat').value.trim();
+  if (!baseId || !pat) { document.getElementById('setup-error').innerHTML = '<div class="error">Both fields are required.</div>'; return; }
+  CONFIG = Object.assign({}, CONFIG || {}, { baseId, pat, digestTime: (CONFIG && CONFIG.digestTime) || '07:30' });
+  saveConfig();
+  location.reload();
+}
+function disconnectSetup(){
+  if (!confirm('This clears your saved Airtable connection on this device. Your data stays in Airtable. Continue?')) return;
+  try { localStorage.removeItem('at_config'); } catch(e){}
+  location.reload();
+}
+
+/* ============================================================
+   AIRTABLE
+   ============================================================ */
+function atHeaders(json){ const h = { Authorization: `Bearer ${CONFIG.pat}` }; if (json) h['Content-Type'] = 'application/json'; return h; }
+function atUrl(table){ return `https://api.airtable.com/v0/${CONFIG.baseId}/${encodeURIComponent(table)}`; }
+async function atError(res, what){
+  let detail = '';
+  try { const j = await res.json(); detail = (j.error && (j.error.type || j.error)) || ''; } catch(e){}
+  const err = new Error(`Airtable ${what} failed: ${res.status} ${typeof detail === 'string' ? detail : ''}`);
+  err.status = res.status; err.detail = detail;
+  return err;
+}
+async function listAll(table){
+  let records = [], offset = null;
+  do {
+    const res = await fetch(`${atUrl(table)}?pageSize=100${offset ? '&offset=' + offset : ''}`, { headers: atHeaders() });
+    if (!res.ok) throw await atError(res, 'read');
+    const data = await res.json();
+    records = records.concat(data.records);
+    offset = data.offset;
+  } while (offset);
+  return records;
+}
+async function atCreateMany(table, fieldsList){
+  const out = [];
+  for (let i = 0; i < fieldsList.length; i += 10) {
+    const res = await fetch(atUrl(table), { method:'POST', headers: atHeaders(true),
+      body: JSON.stringify({ records: fieldsList.slice(i, i+10).map(fields => ({ fields })), typecast: true }) });
+    if (!res.ok) throw await atError(res, 'create');
+    out.push(...(await res.json()).records);
+  }
+  return out;
+}
+async function atCreate(table, fields){ return (await atCreateMany(table, [fields]))[0]; }
+async function atUpdate(table, id, fields){
+  const res = await fetch(atUrl(table), { method:'PATCH', headers: atHeaders(true), body: JSON.stringify({ records: [{ id, fields }], typecast: true }) });
+  if (!res.ok) throw await atError(res, 'update');
+  return (await res.json()).records[0];
+}
+async function atDelete(table, id){
+  const res = await fetch(`${atUrl(table)}?records[]=${encodeURIComponent(id)}`, { method:'DELETE', headers: atHeaders() });
+  if (!res.ok) throw await atError(res, 'delete');
+  return res.json();
+}
+function toTemplate(r){ return { id: r.id, _created: ds(new Date(r.createdTime || Date.now())), ...r.fields }; }
+async function loadData(){
+  const [tRecs, lRecs] = await Promise.all([listAll(TEMPLATES_TABLE), listAll(LOG_TABLE)]);
+  templates = tRecs.map(toTemplate);
+  logCache = lRecs.map(r => ({ id: r.id, ...r.fields }));
+  if (templates.some(t => t.Repeat)) { CONFIG.repeatField = 'ok'; saveConfig(); }
+  lastLoad = Date.now();
+}
+
+// The Repeat field is new in this version. Try to add it via the metadata API
+// (needs schema.bases scopes); if we can't, the user is told how to add it by hand.
+async function ensureRepeatField(){
+  if (CONFIG.repeatField === 'ok') return true;
+  try {
+    const res = await fetch(`https://api.airtable.com/v0/meta/bases/${CONFIG.baseId}/tables`, { headers: atHeaders() });
+    if (!res.ok) return false;
+    const tbl = (await res.json()).tables.find(t => t.name === TEMPLATES_TABLE);
+    if (!tbl) return false;
+    if (!tbl.fields.some(f => f.name === 'Repeat')) {
+      const r2 = await fetch(`https://api.airtable.com/v0/meta/bases/${CONFIG.baseId}/tables/${tbl.id}/fields`, {
+        method:'POST', headers: atHeaders(true),
+        body: JSON.stringify({ name:'Repeat', type:'singleLineText', description:'Repeat rule used by Do It (blank = weekly)' })
+      });
+      if (!r2.ok) return false;
+    }
+    CONFIG.repeatField = 'ok'; saveConfig();
+    return true;
+  } catch (e) { return false; }
+}
+const REPEAT_HELP = 'Fortnightly and monthly tasks need a text field called "Repeat" in your Templates table. Add it in Airtable (single line text) and try again.';
+function isUnknownField(e){ return e && e.status === 422 && /UNKNOWN_FIELD/i.test(String(e.detail || e.message)); }
+
+function errSuffix(e){
+  if (isUnknownField(e)) return ' — a field is missing in Airtable.';
+  const code = e && e.status ? String(e.status) : (String(e && e.message || '').match(/(\d{3})/) || [])[1];
+  if (!code) return navigator.onLine ? '.' : ' — you look offline.';
+  const hints = { '401':'token invalid', '403':'token not granted to this base', '404':'base ID or table name wrong', '422':'field name mismatch in Airtable', '429':'rate limited, try again shortly' };
+  return ` (HTTP ${code}${hints[code] ? ' — ' + hints[code] : ''}).`;
+}
+
+/* ============================================================
+   TASK COMPUTATION
+   ============================================================ */
+function findLog(templateId, date){ return logCache.find(l => l.Type === 'Recurring' && l.TemplateId === templateId && l.Date === date); }
+function fromTemplate(t, date, anytime){
+  const log = findLog(t.id, date);
+  return {
+    id: log ? log.id : `t:${t.id}:${date}`, logId: log ? log.id : null,
+    title: t.Title || '(untitled)', category: t.Category || 'Other', time: t.Time || '',
+    status: log ? (log.Status || 'Pending') : 'Pending', source: 'Recurring',
+    templateId: t.id, date, anytime, notes: log ? log.Notes : ''
+  };
+}
+function fromLog(l){
+  return {
+    id: l.id, logId: l.id, title: l.Title || '(untitled)', category: l.Category || 'Other', time: l.Time || '',
+    status: l.Status || 'Pending', source: l.Type || 'OneOff', templateId: l.TemplateId || null,
+    date: l.Date, anytime: l.Type === 'Anytime', notes: l.Notes || ''
+  };
+}
+function sortTasks(list){
+  return list.sort((a, b) => (a.time || '99') < (b.time || '99') ? -1 : (a.time || '99') > (b.time || '99') ? 1 : a.title.localeCompare(b.title));
+}
+function computeDay(date){
+  const d = parseDs(date), out = [];
+  templates.forEach(t => {
+    if (t.Active === false || isAnytimeTemplate(t) || date < t._created || !occursOn(t, d)) return;
+    const task = fromTemplate(t, date, false);
+    if (task.status !== 'Moved') out.push(task);
+  });
+  logCache.forEach(l => {
+    if (l.Date === date && l.Type !== 'Recurring' && l.Type !== 'Anytime' && l.Status !== 'Moved') out.push(fromLog(l));
+  });
+  return sortTasks(out);
+}
+function computeAnytime(weekStart){
+  const ws = parseDs(weekStart), out = [];
+  templates.forEach(t => {
+    if (t.Active === false || !isAnytimeTemplate(t) || weekStart < ds(mondayOf(parseDs(t._created)))) return;
+    if (!weekMatches(parseRepeat(t.Repeat), ws)) return;
+    const task = fromTemplate(t, weekStart, true);
+    if (task.status !== 'Moved') out.push(task);
+  });
+  logCache.forEach(l => { if (l.Type === 'Anytime' && l.Date === weekStart && l.Status !== 'Moved') out.push(fromLog(l)); });
+  return sortTasks(out);
+}
+function computeOverdue(){
+  const today = todayStr(), thisWeek = ds(mondayOf(new Date()));
+  return logCache.filter(l => (l.Status || 'Pending') === 'Pending' && l.Date &&
+      ((ONE_OFF_TYPES.includes(l.Type) && l.Date < today) || (l.Type === 'Anytime' && l.Date < thisWeek)))
+    .map(fromLog).sort((a, b) => a.date.localeCompare(b.date));
+}
+function passesFilter(t){ return !filterCat || t.category === filterCat; }
+
+/* ============================================================
+   RENDER
+   ============================================================ */
+function escapeHtml(s){ return String(s == null ? '' : s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])); }
+
+function render(){
+  taskIndex = {};
+  document.querySelectorAll('#view-seg button').forEach(b => b.classList.toggle('on', b.dataset.view === view));
+  renderFilters();
+  renderBanner();
+  if (view === 'month') renderMonth(); else renderWeek();
+}
+
+function renderFilters(){
+  const used = new Set(templates.map(t => t.Category).concat(logCache.map(l => l.Category)));
+  const cats = getCategories().filter(c => used.has(c.key) || c.key === filterCat);
+  const el = document.getElementById('filters');
+  el.innerHTML = `<button class="chip ${filterCat ? '' : 'on'}" onclick="setFilter(null)">All</button>` +
+    cats.map(c => `<button class="chip ${filterCat === c.key ? 'on' : ''}" style="--c:${c.color}" onclick="setFilter(${escapeHtml(JSON.stringify(c.key))})"><span class="dot"></span>${escapeHtml(c.key)}</button>`).join('');
+}
+function setFilter(c){ filterCat = filterCat === c ? null : c; render(); }
+
+function renderBanner(){
+  const el = document.getElementById('banner');
+  if (lastLoad && templates.length === 0 && !(CONFIG && CONFIG.starterDismissed)) {
+    el.innerHTML = `<div class="banner"><p><b>No repeating tasks yet.</b> Start with a set of common weekly, fortnightly and monthly ones?</p>
+      <button class="btn" onclick="openStarters()">Choose starters</button><button class="btn ghost" onclick="dismissStarterBanner()">No thanks</button></div>`;
+  } else el.innerHTML = '';
+}
+function dismissStarterBanner(){ CONFIG.starterDismissed = true; saveConfig(); renderBanner(); }
+
+function pillHtml(t){
+  taskIndex[t.id] = t;
+  const today = todayStr();
+  const missed = t.status === 'Pending' && t.source === 'Recurring' && (t.anytime ? addDays(parseDs(t.date), 6) < parseDs(today) : t.date < today);
+  const cls = ['pill', t.status === 'Done' ? 'done' : '', t.status === 'Skipped' ? 'skipped' : '', missed ? 'missed' : ''].join(' ');
+  const meta = [t.time ? escapeHtml(t.time) : '', t.templateId ? '<span title="Repeats">&#8635;</span>' : ''].filter(Boolean).join(' ');
+  const showDate = t._showDate ? `<span class="meta">${escapeHtml(prettyDate(t.date))}</span>` : '';
+  return `<div class="${cls}" style="--c:${catColor(t.category)}" data-id="${escapeHtml(t.id)}" draggable="true" role="button" tabindex="0" aria-label="${escapeHtml(t.title)}">
+    <button class="check" data-check="1" aria-label="${t.status === 'Done' ? 'Mark not done' : 'Mark done'}">${t.status === 'Done' ? '&#10003;' : ''}</button>
+    <span class="ttl">${escapeHtml(t.title)}</span>${showDate}${meta ? `<span class="meta">${meta}</span>` : ''}</div>`;
+}
+
+function renderWeek(){
+  const ws = mondayOf(cursor), we = addDays(ws, 6), wsStr = ds(ws), today = todayStr();
+  document.getElementById('range-title').textContent = ws.getMonth() === we.getMonth()
+    ? `${ws.getDate()} – ${we.getDate()} ${MONTHS[we.getMonth()]} ${we.getFullYear()}`
+    : `${ws.getDate()} ${MONTHS[ws.getMonth()]} – ${we.getDate()} ${MONTHS[we.getMonth()]} ${we.getFullYear()}`;
+
+  let total = 0, done = 0, html = '<div class="week-wrap"><div class="week">';
+  for (let i = 0; i < 7; i++) {
+    const d = addDays(ws, i), dStr = ds(d);
+    const all = computeDay(dStr), tasks = all.filter(passesFilter);
+    all.forEach(t => { if (t.status !== 'Skipped') { total++; if (t.status === 'Done') done++; } });
+    html += `<section class="day ${dStr === today ? 'today' : ''} ${dStr < today ? 'past' : ''}" data-drop-date="${dStr}">
+      <div class="day-h"><span class="dow">${WEEK_DAYS[i]}</span><span class="num">${d.getDate()}</span>
+        <button class="add" onclick="openTaskForm({date:'${dStr}'})" aria-label="Add task on ${WEEK_DAYS[i]}">+</button></div>
+      <div class="tasks">${tasks.map(pillHtml).join('') || '<div class="empty-day">&mdash;</div>'}</div></section>`;
+  }
+  html += '</div>';
+
+  const anyAll = computeAnytime(wsStr), anytime = anyAll.filter(passesFilter);
+  anyAll.forEach(t => { if (t.status !== 'Skipped') { total++; if (t.status === 'Done') done++; } });
+  html += `<section class="tray anytime" data-drop-anytime="${wsStr}">
+    <div class="tray-h">Anytime this week<button class="add" onclick="openTaskForm({date:'${wsStr}', anytime:true})">+ Add</button></div>
+    <div class="tasks">${anytime.map(pillHtml).join('') || '<div class="empty-day">Nothing floating this week.</div>'}</div></section>`;
+
+  if (wsStr === ds(mondayOf(new Date()))) {
+    const overdue = computeOverdue().filter(passesFilter);
+    if (overdue.length) html += `<section class="tray overdue"><div class="tray-h">Overdue &middot; ${overdue.length}</div>
+      <div class="tasks">${overdue.map(t => pillHtml(Object.assign(t, { _showDate:true }))).join('')}</div></section>`;
+  }
+  html += '</div>';
+  document.getElementById('view').innerHTML = html;
+  const pct = total ? Math.round(done / total * 100) : 0;
+  document.getElementById('progress').innerHTML = total
+    ? `<span class="bar"><i style="width:${pct}%"></i></span><span>${done} of ${total} done this week</span>`
+    : '<span>Nothing scheduled this week</span>';
+}
+
+function renderMonth(){
+  const first = new Date(cursor.getFullYear(), cursor.getMonth(), 1);
+  const start = mondayOf(first), today = todayStr();
+  const last = new Date(cursor.getFullYear(), cursor.getMonth() + 1, 0);
+  const end = addDays(mondayOf(last), 6);
+  document.getElementById('range-title').textContent = `${first.toLocaleString(undefined, { month:'long' })} ${first.getFullYear()}`;
+  let html = '<div class="month">' + WEEK_DAYS.map(d => `<div class="mh">${d}</div>`).join('');
+  let total = 0, done = 0;
+  for (let d = start; d <= end; d = addDays(d, 1)) {
+    const dStr = ds(d), inMonth = d.getMonth() === first.getMonth();
+    const all = computeDay(dStr), tasks = all.filter(t => passesFilter(t) && t.status !== 'Skipped');
+    if (inMonth) all.forEach(t => { if (t.status !== 'Skipped') { total++; if (t.status === 'Done') done++; } });
+    const shown = tasks.slice(0, 3);
+    html += `<button class="mcell ${inMonth ? '' : 'out'} ${dStr === today ? 'today' : ''}" onclick="openWeekOf('${dStr}')" aria-label="${escapeHtml(prettyDate(dStr))}, ${tasks.length} tasks">
+      <span class="mnum">${d.getDate()}</span>
+      ${shown.map(t => `<span class="mini ${t.status === 'Done' ? 'done' : ''}" style="--c:${catColor(t.category)}">${escapeHtml(t.title)}</span>`).join('')}
+      ${tasks.length > 3 ? `<span class="more">+${tasks.length - 3} more</span>` : ''}
+      <span class="dots">${tasks.map(t => `<i class="${t.status === 'Done' ? 'done' : ''}" style="--c:${catColor(t.category)}"></i>`).join('')}</span>
+    </button>`;
+  }
+  html += '</div>';
+  document.getElementById('view').innerHTML = html;
+  document.getElementById('progress').innerHTML = total
+    ? `<span class="bar"><i style="width:${Math.round(done/total*100)}%"></i></span><span>${done} of ${total} dated tasks done</span>` : '';
+}
+
+function setView(v){ view = v; writeLS('doit_view', v); render(); }
+function shift(dir){
+  cursor = view === 'month' ? new Date(cursor.getFullYear(), cursor.getMonth() + dir, 1) : addDays(cursor, 7 * dir);
+  render();
+}
+function goToday(){ cursor = new Date(); render(); }
+function openWeekOf(dStr){ cursor = parseDs(dStr); setView('week'); }
+
+/* ---------- Interaction: clicks, keyboard, drag ---------- */
+const viewEl = () => document.getElementById('view');
+document.addEventListener('click', (e) => {
+  const pill = e.target.closest('#view .pill');
+  if (!pill) return;
+  const t = taskIndex[pill.dataset.id];
+  if (!t) return;
+  if (e.target.closest('[data-check]')) run(() => setStatus(t, t.status === 'Done' ? 'Pending' : 'Done'));
+  else openDetail(t);
+});
+document.addEventListener('keydown', (e) => {
+  const pill = e.target.closest && e.target.closest('#view .pill');
+  if (pill && e.target === pill && (e.key === 'Enter' || e.key === ' ')) { e.preventDefault(); const t = taskIndex[pill.dataset.id]; if (t) openDetail(t); }
+});
+let dragId = null;
+document.addEventListener('dragstart', (e) => {
+  const pill = e.target.closest && e.target.closest('#view .pill');
+  if (!pill) return;
+  dragId = pill.dataset.id;
+  pill.classList.add('dragging');
+  e.dataTransfer.effectAllowed = 'move';
+  e.dataTransfer.setData('text/plain', dragId);
+});
+document.addEventListener('dragend', () => {
+  dragId = null;
+  document.querySelectorAll('.dragging, .drop').forEach(el => el.classList.remove('dragging', 'drop'));
+});
+document.addEventListener('dragover', (e) => {
+  const zone = dragId && e.target.closest && e.target.closest('[data-drop-date],[data-drop-anytime]');
+  document.querySelectorAll('.drop').forEach(el => { if (el !== zone) el.classList.remove('drop'); });
+  if (!zone) return;
+  e.preventDefault();
+  zone.classList.add('drop');
+});
+document.addEventListener('drop', (e) => {
+  const zone = e.target.closest && e.target.closest('[data-drop-date],[data-drop-anytime]');
+  if (!zone || !dragId) return;
+  e.preventDefault();
+  const t = taskIndex[dragId];
+  if (!t) return;
+  const target = zone.dataset.dropAnytime ? { anytime: zone.dataset.dropAnytime } : { date: zone.dataset.dropDate };
+  run(() => moveTask(t, target));
+});
+
+/* ============================================================
+   MUTATIONS
+   ============================================================ */
+async function run(fn){
+  try { await fn(); }
+  catch (e) {
+    console.error(e);
+    if (isUnknownField(e) && /Repeat/i.test(String(e.message) + JSON.stringify(e.detail || ''))) showToast(REPEAT_HELP);
+    else showToast("Couldn't save" + errSuffix(e));
+  }
+}
+
+// Write fields to a task's Log row, creating the row for a recurring occurrence if needed.
+// Updates the local cache first so the UI responds instantly; rolls back on failure.
+async function upsertTaskLog(task, fields){
+  const log = task.logId ? logCache.find(l => l.id === task.logId) : null;
+  if (log && String(log.id).startsWith('tmp')) throw new Error('Still saving — try again in a second');
+  if (log) {
+    const prev = { ...log };
+    Object.assign(log, fields); render();
+    try { await atUpdate(LOG_TABLE, log.id, fields); }
+    catch (e) { Object.keys(log).forEach(k => delete log[k]); Object.assign(log, prev); render(); throw e; }
+    return log;
+  }
+  const base = { Title: task.title, Category: task.category, Type: 'Recurring', TemplateId: task.templateId, Date: task.date, Status: 'Pending', ...fields };
+  const tmp = { id: 'tmp' + Math.random().toString(36).slice(2), ...base };
+  logCache.push(tmp); render();
+  try { const rec = await atCreate(LOG_TABLE, base); Object.assign(tmp, { id: rec.id, ...rec.fields }); }
+  catch (e) { logCache = logCache.filter(l => l !== tmp); render(); throw e; }
+  render();
+  return tmp;
+}
+async function clearCalendarEvent(log){
+  if (log && log.CalendarEventId) {
+    const id = log.CalendarEventId;
+    log.CalendarEventId = '';
+    deleteCalendarEvent(id);
+    try { await atUpdate(LOG_TABLE, log.id, { CalendarEventId: '' }); } catch (e) {}
+  }
+}
+
+async function setStatus(task, status){
+  const log = await upsertTaskLog(task, { Status: status, CompletedAt: status === 'Done' ? new Date().toISOString() : '' });
+  if (status !== 'Pending') clearCalendarEvent(log);
+  if (status === 'Skipped') showToast(`Skipped “${task.title}”`, 'Undo', () => run(() => setStatus({ ...task, logId: log.id }, 'Pending')));
+}
+
+async function moveTask(task, target){
+  const newDate = target.anytime || target.date;
+  const toAnytime = !!target.anytime;
+  if (!toAnytime && newDate === task.date && !task.anytime) return;
+  if (toAnytime && task.anytime && newDate === task.date) return;
+  if (task.source === 'Recurring') {
+    // Mark this occurrence as moved, then put a one-off copy (still linked to the series) on the new date.
+    const old = await upsertTaskLog(task, { Status: 'Moved', Notes: 'Moved to ' + newDate });
+    clearCalendarEvent(old);
+    const fields = { Title: task.title, Category: task.category, Type: toAnytime ? 'Anytime' : 'Moved', TemplateId: task.templateId, Date: newDate, Status: 'Pending', Time: task.time || '' };
+    const tmp = { id: 'tmp' + Math.random().toString(36).slice(2), ...fields };
+    logCache.push(tmp); render();
+    try { const rec = await atCreate(LOG_TABLE, fields); Object.assign(tmp, { id: rec.id, ...rec.fields }); render(); }
+    catch (e) { logCache = logCache.filter(l => l !== tmp); await upsertTaskLog({ ...task, logId: old.id }, { Status: 'Pending', Notes: '' }); throw e; }
+  } else {
+    const type = toAnytime ? 'Anytime' : (task.source === 'Anytime' ? (task.templateId ? 'Moved' : 'OneOff') : task.source);
+    const log = await upsertTaskLog(task, { Date: newDate, Type: type });
+    clearCalendarEvent(log);
+  }
+  showToast(toAnytime ? 'Moved to anytime that week' : `Moved to ${prettyDate(newDate)}`);
+  if (CONFIG.googleCalendarEnabled && newDate === todayStr()) syncTodayCalendar();
+}
+
+/* ============================================================
+   DETAIL SHEET
+   ============================================================ */
+function openSheet(id){ document.getElementById(id).classList.add('open'); }
+function closeSheet(id){ document.getElementById(id).classList.remove('open'); }
+
+function openDetail(t){
+  detailTask = t;
+  const tpl = t.templateId ? templates.find(x => x.id === t.templateId) : null;
+  document.getElementById('detail-meta').innerHTML = `<span class="chip on" style="--c:${catColor(t.category)}"><span class="dot"></span>${escapeHtml(t.category)}</span>` +
+    (tpl ? `<span>&#8635; ${escapeHtml(repeatLabel(tpl))}</span>` : '');
+  document.getElementById('detail-title').textContent = t.title;
+  const when = t.anytime ? `Anytime in week of ${prettyDate(t.date)}` : prettyDate(t.date);
+  document.getElementById('detail-when').innerHTML = `<span>${escapeHtml(when)}${t.time ? ' · ' + escapeHtml(t.time) : ''}</span>` +
+    (t.status !== 'Pending' ? `<span>· ${escapeHtml(t.status)}</span>` : '');
+
+  const a = [];
+  a.push(t.status === 'Done'
+    ? `<button class="btn secondary" onclick="detailStatus('Pending')">Mark not done</button>`
+    : `<button class="btn" onclick="detailStatus('Done')">Mark done</button>`);
+  if (t.status === 'Skipped') a.push(`<button class="btn secondary" onclick="detailStatus('Pending')">Unskip</button>`);
+  else if (t.status === 'Pending' && t.source === 'Recurring') a.push(`<button class="btn secondary" onclick="detailStatus('Skipped')">Skip this time</button>`);
+  if (t.source !== 'Recurring') a.push(`<button class="btn secondary" onclick="detailEdit()">Edit</button>`);
+  if (tpl) a.push(`<button class="btn secondary" onclick="closeSheet('detail-sheet');openTaskForm({templateId:'${tpl.id}'})">Edit repeat</button>`);
+  if (t.source !== 'Recurring') a.push(`<button class="btn danger" onclick="detailDelete()">Delete</button>`);
+  document.getElementById('detail-actions').innerHTML = a.join('');
+
+  const base = t.anytime ? new Date() : parseDs(t.date);
+  const tomorrow = ds(addDays(t.date < todayStr() ? new Date() : base, 1));
+  const nextWeek = ds(mondayOf(addDays(parseDs(t.date), 7)));
+  document.getElementById('move-date').value = tomorrow;
+  const q = [];
+  if (t.date < todayStr() || t.anytime) q.push(`<button class="chip" onclick="detailMove({date:'${todayStr()}'})">Today</button>`);
+  q.push(`<button class="chip" onclick="detailMove({date:'${tomorrow}'})">${t.date < todayStr() || t.anytime ? 'Tomorrow' : 'Next day'}</button>`);
+  if (!t.anytime) q.push(`<button class="chip" onclick="detailMove({anytime:'${ds(mondayOf(parseDs(t.date) < mondayOf(new Date()) ? new Date() : parseDs(t.date)))}'})">Anytime that week</button>`);
+  q.push(`<button class="chip" onclick="detailMove({anytime:'${nextWeek}'})">Next week</button>`);
+  document.getElementById('move-quick').innerHTML = q.join('');
+  openSheet('detail-sheet');
+}
+function detailStatus(s){ const t = detailTask; closeSheet('detail-sheet'); run(() => setStatus(t, s)); }
+function detailMove(target){ const t = detailTask; closeSheet('detail-sheet'); run(() => moveTask(t, target)); }
+function detailMoveTo(){ const v = document.getElementById('move-date').value; if (v) detailMove({ date: v }); }
+function detailEdit(){ const t = detailTask; closeSheet('detail-sheet'); openTaskForm({ logId: t.logId }); }
+async function detailDelete(){
+  const t = detailTask;
+  if (!confirm(`Delete “${t.title}”?`)) return;
+  closeSheet('detail-sheet');
+  run(async () => {
+    const log = logCache.find(l => l.id === t.logId);
+    const idx = logCache.indexOf(log);
+    logCache.splice(idx, 1); render();
+    try { await atDelete(LOG_TABLE, t.logId); }
+    catch (e) { logCache.splice(idx, 0, log); render(); throw e; }
+    if (log && log.CalendarEventId) deleteCalendarEvent(log.CalendarEventId);
+    showToast('Deleted');
+  });
+}
+
+/* ============================================================
+   TASK FORM
+   ============================================================ */
+function openTaskForm(opts){
+  opts = opts || {};
+  const tpl = opts.templateId ? templates.find(t => t.id === opts.templateId) : null;
+  const log = opts.logId ? logCache.find(l => l.id === opts.logId) : null;
+  const defaultDate = opts.date || (view === 'week' && mondayOf(cursor).getTime() !== mondayOf(new Date()).getTime() ? ds(mondayOf(cursor)) : todayStr());
+  form = {
+    templateId: tpl ? tpl.id : null, logId: log ? log.id : null,
+    kind: tpl || opts.kind === 'repeat' ? 'repeat' : 'once',
+    category: (tpl && tpl.Category) || (log && log.Category) || filterCat || 'Chores',
+    days: new Set(tpl ? (tpl.Days || []) : opts.date && !opts.anytime ? [DAY_ABBR[parseDs(opts.date).getDay()]] : []),
+  };
+  document.getElementById('form-title').textContent = tpl ? 'Edit repeating task' : log ? 'Edit task' : 'Add a task';
+  document.getElementById('f-kind-wrap').hidden = !!(tpl || log);
+  document.getElementById('f-title').value = (tpl && tpl.Title) || (log && log.Title) || '';
+  document.getElementById('form-error').innerHTML = '';
+
+  // one-off fields
+  document.getElementById('f-date').value = log ? log.Date : defaultDate;
+  document.getElementById('f-anytime').checked = log ? log.Type === 'Anytime' : !!opts.anytime;
+  document.getElementById('f-time').value = (log && log.Time) || '';
+
+  // repeat fields
+  const r = parseRepeat(tpl && tpl.Repeat);
+  const freq = document.getElementById('f-freq');
+  freq.value = r.kind === 'weeks' ? 'w' + Math.min(4, r.n) : r.kind === 'monthDay' ? 'md' : 'mn';
+  document.getElementById('f-anchor').value = r.kind === 'weeks' && r.n > 1 && tpl ? r.anchor : ds(mondayOf(opts.date ? parseDs(opts.date) : new Date()));
+  const mday = document.getElementById('f-mday');
+  mday.innerHTML = Array.from({ length: 31 }, (_, i) => `<option value="${i+1}">${ordinal(i+1)}${i >= 28 ? ' (or last day)' : ''}</option>`).join('');
+  mday.value = r.kind === 'monthDay' ? r.day : (opts.date ? parseDs(opts.date).getDate() : 1);
+  const ndow = document.getElementById('f-ndow');
+  ndow.innerHTML = WEEK_DAYS.map(d => `<option>${d}</option>`).join('');
+  ndow.value = r.kind === 'monthNth' ? r.dow : 'Mon';
+  document.getElementById('f-nth').value = r.kind === 'monthNth' ? r.nth : 1;
+  document.getElementById('f-rtime').value = (tpl && tpl.Time) || '';
+
+  const extra = [];
+  if (tpl) {
+    extra.push(`<button class="btn secondary" onclick="togglePauseTemplate()">${tpl.Active === false ? 'Resume' : 'Pause'}</button>`);
+    extra.push(`<button class="btn danger" onclick="deleteTemplate()">Delete</button>`);
+  }
+  document.getElementById('form-extra').innerHTML = extra.join('');
+  renderFormChips();
+  setFormKind(form.kind);
+  closeSheet('settings-sheet');
+  openSheet('form-sheet');
+  setTimeout(() => document.getElementById('f-title').focus(), 50);
+}
+function renderFormChips(){
+  document.getElementById('f-cats').innerHTML = getCategories().map(c =>
+    `<button class="chip ${form.category === c.key ? 'on' : ''}" style="--c:${c.color}" onclick="form.category=${escapeHtml(JSON.stringify(c.key))};renderFormChips()"><span class="dot"></span>${escapeHtml(c.key)}</button>`).join('');
+  document.getElementById('f-days').innerHTML = WEEK_DAYS.map(d =>
+    `<button class="chip ${form.days.has(d) ? 'on' : ''}" onclick="toggleFormDay('${d}')">${d}</button>`).join('') +
+    `<button class="chip" onclick="form.days=new Set(${form.days.size === 7 ? '' : 'WEEK_DAYS'});renderFormChips()">${form.days.size === 7 ? 'Clear' : 'Every day'}</button>`;
+}
+function toggleFormDay(d){ form.days.has(d) ? form.days.delete(d) : form.days.add(d); renderFormChips(); }
+function setFormKind(k){
+  form.kind = k;
+  document.querySelectorAll('#f-kind button').forEach(b => b.classList.toggle('on', b.dataset.kind === k));
+  document.getElementById('f-once').hidden = k !== 'once';
+  document.getElementById('f-repeat').hidden = k !== 'repeat';
+  if (k === 'repeat' && !form.templateId && form.days.size === 0) {
+    const d = document.getElementById('f-date').value;
+    if (d && !document.getElementById('f-anytime').checked) { form.days.add(DAY_ABBR[parseDs(d).getDay()]); renderFormChips(); }
+  }
+  syncOnceFields(); syncRepeatFields();
+}
+function syncOnceFields(){
+  const any = document.getElementById('f-anytime').checked;
+  document.getElementById('f-time').disabled = any;
+  if (any) document.getElementById('f-time').value = '';
+}
+function syncRepeatFields(){
+  const f = document.getElementById('f-freq').value;
+  document.getElementById('f-days-wrap').hidden = f[0] !== 'w';
+  document.getElementById('f-anchor-wrap').hidden = !(f[0] === 'w' && f !== 'w1');
+  document.getElementById('f-mday-wrap').hidden = f !== 'md';
+  document.getElementById('f-mnth-wrap').hidden = f !== 'mn';
+}
+
+async function submitTaskForm(){
+  const title = document.getElementById('f-title').value.trim();
+  const errEl = document.getElementById('form-error');
+  errEl.innerHTML = '';
+  if (!title) { errEl.innerHTML = '<div class="error">Give it a name first.</div>'; return; }
+  const btn = document.getElementById('f-save');
+  btn.disabled = true;
+  try {
+    if (form.kind === 'repeat') await saveTemplate(title);
+    else await saveOneOff(title);
+    closeSheet('form-sheet');
+  } catch (e) {
+    console.error(e);
+    errEl.innerHTML = `<div class="error">${escapeHtml(isUnknownField(e) ? REPEAT_HELP : "Couldn't save" + errSuffix(e))}</div>`;
+  } finally { btn.disabled = false; }
+}
+
+async function saveOneOff(title){
+  const anytime = document.getElementById('f-anytime').checked;
+  let date = document.getElementById('f-date').value || todayStr();
+  if (anytime) date = ds(mondayOf(parseDs(date)));
+  const time = anytime ? '' : document.getElementById('f-time').value;
+  const existing = form.logId ? logCache.find(l => l.id === form.logId) : null;
+  if (existing) {
+    const type = anytime ? 'Anytime' : (existing.Type === 'Anytime' ? (existing.TemplateId ? 'Moved' : 'OneOff') : existing.Type);
+    const changedSlot = existing.Date !== date || (existing.Time || '') !== time;
+    await upsertTaskLog(fromLog(existing), { Title: title, Category: form.category, Date: date, Time: time, Type: type });
+    if (changedSlot) clearCalendarEvent(existing);
+  } else {
+    const fields = { Title: title, Category: form.category, Type: anytime ? 'Anytime' : 'OneOff', Date: date, Status: 'Pending', Time: time };
+    if (!navigator.onLine) { queueCreate(fields); showToast('Offline — saved, will sync when you reconnect.'); return; }
+    const tmp = { id: 'tmp' + Math.random().toString(36).slice(2), ...fields };
+    logCache.push(tmp); render();
+    try { const rec = await atCreate(LOG_TABLE, fields); Object.assign(tmp, { id: rec.id, ...rec.fields }); }
+    catch (e) {
+      logCache = logCache.filter(l => l !== tmp);
+      if (e instanceof TypeError) { queueCreate(fields); render(); showToast('Network hiccup — queued, will sync shortly.'); return; }
+      render(); throw e;
+    }
+    cursor = parseDs(date);
+  }
+  render();
+  if (CONFIG.googleCalendarEnabled && date === todayStr() && time) syncTodayCalendar();
+}
+
+function readRepeatForm(){
+  const f = document.getElementById('f-freq').value;
+  if (f === 'md') return { r: { kind:'monthDay', day: parseInt(document.getElementById('f-mday').value, 10) }, days: [] };
+  if (f === 'mn') return { r: { kind:'monthNth', nth: parseInt(document.getElementById('f-nth').value, 10), dow: document.getElementById('f-ndow').value }, days: [] };
+  const n = parseInt(f.slice(1), 10);
+  return { r: { kind:'weeks', n, anchor: ds(mondayOf(parseDs(document.getElementById('f-anchor').value || todayStr()))) }, days: sortDays([...form.days]) };
+}
+async function saveTemplate(title){
+  const { r, days } = readRepeatForm();
+  const repeat = serializeRepeat(r);
+  const existing = form.templateId ? templates.find(t => t.id === form.templateId) : null;
+  const fields = { Title: title, Category: form.category, Days: days, Time: document.getElementById('f-rtime').value || '', Active: existing ? existing.Active !== false : true };
+  // Only touch Repeat when needed, so plain weekly tasks still work on bases without the field.
+  if (repeat || (existing && existing.Repeat)) { await ensureRepeatField(); fields.Repeat = repeat; }
+  if (existing) {
+    const rec = await atUpdate(TEMPLATES_TABLE, existing.id, fields);
+    Object.assign(existing, fields, rec ? rec.fields : {});
+    if (!repeat) delete existing.Repeat;
+    showToast('Repeating task updated');
+  } else {
+    const rec = await atCreate(TEMPLATES_TABLE, fields);
+    templates.push(toTemplate(rec));
+    showToast(`Added · ${repeatLabel(toTemplate(rec))}`);
+  }
+  render();
+  if (CONFIG.googleCalendarEnabled) syncTodayCalendar();
+}
+async function togglePauseTemplate(){
+  const t = templates.find(x => x.id === form.templateId);
+  if (!t) return;
+  const active = t.Active === false;
+  await run(async () => {
+    await atUpdate(TEMPLATES_TABLE, t.id, { Active: active });
+    t.Active = active;
+    closeSheet('form-sheet'); render();
+    showToast(active ? 'Resumed' : 'Paused — it won’t show up until you resume it');
+  });
+}
+async function deleteTemplate(){
+  const t = templates.find(x => x.id === form.templateId);
+  if (!t || !confirm(`Delete “${t.Title}” for good? Past history stays in the Log.`)) return;
+  await run(async () => {
+    await atDelete(TEMPLATES_TABLE, t.id);
+    templates = templates.filter(x => x.id !== t.id);
+    closeSheet('form-sheet'); render();
+    showToast('Deleted');
+  });
+}
+
+/* ============================================================
+   STARTERS
+   ============================================================ */
+function starterRepeat(s){ return s.Repeat === 'fortnight' ? `weeks:2:${ds(mondayOf(new Date()))}` : s.Repeat; }
+function openStarters(){
+  const have = new Set(templates.map(t => (t.Title || '').toLowerCase()));
+  document.getElementById('starter-list').innerHTML = STARTERS.map((s, i) => {
+    const added = have.has(s.Title.toLowerCase());
+    const label = repeatLabel({ ...s, Repeat: starterRepeat(s) }) + (s.Time ? ' · ' + s.Time : '');
+    return `<label class="starter ${added ? 'added' : ''}">
+      <input type="checkbox" data-i="${i}" ${added ? 'disabled' : 'checked'}>
+      <span class="dot" style="width:9px;height:9px;border-radius:50%;background:${catColor(s.Category)}"></span>
+      <span class="main"><div>${escapeHtml(s.Title)}</div><div class="sub">${escapeHtml(s.Category)} · ${escapeHtml(label)}${added ? ' · already added' : ''}</div></span></label>`;
+  }).join('');
+  closeSheet('settings-sheet');
+  openSheet('starter-sheet');
+}
+async function addStarters(){
+  const picked = [...document.querySelectorAll('#starter-list input:checked')].map(el => STARTERS[+el.dataset.i]);
+  if (!picked.length) { closeSheet('starter-sheet'); return; }
+  const btn = document.getElementById('starter-add');
+  btn.disabled = true; btn.textContent = 'Adding…';
+  try {
+    const needsRepeat = picked.some(s => s.Repeat);
+    const repeatOk = needsRepeat ? await ensureRepeatField() : true;
+    let list = picked, skipped = 0, probed = 0;
+    if (!repeatOk) {
+      // Try one with Repeat to see whether the field exists; if not, add only the weekly ones.
+      const probe = picked.find(s => s.Repeat);
+      try { const rec = await atCreate(TEMPLATES_TABLE, starterFields(probe)); templates.push(toTemplate(rec)); CONFIG.repeatField = 'ok'; saveConfig(); probed = 1; list = picked.filter(s => s !== probe); }
+      catch (e) { if (!isUnknownField(e)) throw e; skipped = picked.filter(s => s.Repeat).length; list = picked.filter(s => !s.Repeat); }
+    }
+    const recs = await atCreateMany(TEMPLATES_TABLE, list.map(starterFields));
+    templates.push(...recs.map(toTemplate));
+    closeSheet('starter-sheet');
+    render();
+    showToast(skipped ? `Added ${recs.length}. ${skipped} fortnightly/monthly ones need a "Repeat" text field in Templates first.` : `Added ${recs.length + probed} repeating tasks`);
+  } catch (e) {
+    console.error(e);
+    showToast("Couldn't add starters" + errSuffix(e));
+  } finally { btn.disabled = false; btn.textContent = 'Add selected'; }
+}
+function starterFields(s){
+  const f = { Title: s.Title, Category: s.Category, Days: s.Days, Time: s.Time, Active: true };
+  if (s.Repeat) f.Repeat = starterRepeat(s);
+  return f;
+}
+
+/* ============================================================
+   SETTINGS
+   ============================================================ */
+function openSettings(){
+  applyTheme();
+  document.getElementById('notif-switch').classList.toggle('on', !!CONFIG.notifEnabled && 'Notification' in window && Notification.permission === 'granted');
+  document.getElementById('gcal-client-id').value = CONFIG.googleClientId || '';
+  updateCalendarStatus();
+  renderTemplateList();
+  renderCategoryList();
+  document.getElementById('repeat-field-status').textContent = CONFIG.repeatField === 'ok'
+    ? 'Connected. Repeat field is set up.'
+    : 'Connected. Fortnightly and monthly tasks will add a "Repeat" field to Templates the first time you make one (or add it yourself as single line text).';
+  openSheet('settings-sheet');
+}
+function renderTemplateList(){
+  const el = document.getElementById('tpl-list');
+  if (!templates.length) { el.innerHTML = '<div class="hint" style="margin:0 0 8px">None yet.</div>'; return; }
+  el.innerHTML = templates.slice().sort((a, b) => (a.Category || '').localeCompare(b.Category || '') || (a.Title || '').localeCompare(b.Title || ''))
+    .map(t => `<button class="list-row ${t.Active === false ? 'paused' : ''}" style="--c:${catColor(t.Category)}" onclick="openTaskForm({templateId:'${t.id}'})">
+      <span class="dot"></span><span class="main"><div>${escapeHtml(t.Title)}</div><div class="sub">${escapeHtml(repeatLabel(t))}${t.Time ? ' · ' + escapeHtml(t.Time) : ''}${t.Active === false ? ' · paused' : ''}</div></span><span class="sub">&#8250;</span></button>`).join('');
+}
+function renderCategoryList(){
+  document.getElementById('cat-list').innerHTML = getCategories().map(c =>
+    `<span class="chip on" style="--c:${c.color}"><span class="dot"></span>${escapeHtml(c.key)}${c.custom ? ` <button style="border:none;background:none;padding:0 0 0 4px;color:var(--text-dim)" onclick="removeCategory(${escapeHtml(JSON.stringify(c.key))})" aria-label="Remove ${escapeHtml(c.key)}">&times;</button>` : ''}</span>`).join('');
+}
+function addCategory(){
+  const el = document.getElementById('new-cat'), name = el.value.trim();
+  if (!name) return;
+  if (getCategories().some(c => c.key.toLowerCase() === name.toLowerCase())) { showToast('That category already exists.'); return; }
+  CONFIG.customCategories = (CONFIG.customCategories || []).concat([name]);
+  saveConfig(); el.value = ''; renderCategoryList(); render();
+}
+function removeCategory(name){
+  CONFIG.customCategories = (CONFIG.customCategories || []).filter(c => c !== name);
+  saveConfig(); renderCategoryList(); render();
+}
+async function manualRefresh(quiet){
+  try { await loadData(); await flushQueue(); render(); if (!quiet) showToast('Up to date'); }
+  catch (e) { if (!quiet) showToast('Refresh failed' + errSuffix(e)); }
+}
+
+/* ============================================================
+   GOOGLE CALENDAR
+   ============================================================ */
+function initGoogleClient(){
+  if (!CONFIG.googleClientId) return;
+  if (!window.google || !google.accounts || !google.accounts.oauth2) { setTimeout(initGoogleClient, 400); return; }
+  gTokenClient = google.accounts.oauth2.initTokenClient({ client_id: CONFIG.googleClientId, scope: 'https://www.googleapis.com/auth/calendar.events', callback: () => {} });
+  updateCalendarStatus();
+}
+function connectGoogleCalendar(){
+  const cid = document.getElementById('gcal-client-id').value.trim();
+  if (!cid) { showToast('Paste a Google OAuth Client ID first.'); return; }
+  if (!window.google || !google.accounts) { showToast('Google sign-in script hasn’t loaded yet.'); return; }
+  CONFIG.googleClientId = cid; saveConfig();
+  gTokenClient = google.accounts.oauth2.initTokenClient({
+    client_id: cid, scope: 'https://www.googleapis.com/auth/calendar.events',
+    callback: async (resp) => {
+      if (resp.error) { showToast('Google sign-in failed — check the Client ID and authorised origin.'); return; }
+      gAccessToken = resp.access_token; gTokenExpiry = Date.now() + (resp.expires_in * 1000 - 60000);
+      CONFIG.googleCalendarEnabled = true; saveConfig();
+      updateCalendarStatus(); showToast('Google Calendar connected.');
+      await syncTodayCalendar();
+    }
+  });
+  gTokenClient.requestAccessToken();
+}
+function updateCalendarStatus(){
+  const el = document.getElementById('gcal-status');
+  if (el) el.textContent = CONFIG.googleCalendarEnabled ? 'Connected — today’s timed tasks sync automatically.' : 'Not connected.';
+}
+async function ensureGoogleToken(){
+  if (gAccessToken && Date.now() < gTokenExpiry) return gAccessToken;
+  return new Promise((resolve, reject) => {
+    if (!gTokenClient) { reject('Google Calendar not connected'); return; }
+    gTokenClient.callback = (resp) => {
+      if (resp.error) { reject(resp.error); return; }
+      gAccessToken = resp.access_token; gTokenExpiry = Date.now() + (resp.expires_in * 1000 - 60000);
+      resolve(gAccessToken);
+    };
+    gTokenClient.requestAccessToken({ prompt: '' });
+  });
+}
+async function createCalendarEvent(title, dateStr, timeStr){
+  try {
+    const token = await ensureGoogleToken();
+    const start = new Date(dateStr + 'T' + timeStr + ':00'), end = new Date(start.getTime() + 30 * 60000);
+    const tz = Intl.DateTimeFormat().resolvedOptions().timeZone;
+    const res = await fetch('https://www.googleapis.com/calendar/v3/calendars/primary/events', {
+      method:'POST', headers: { Authorization: 'Bearer ' + token, 'Content-Type': 'application/json' },
+      body: JSON.stringify({ summary: title, start: { dateTime: start.toISOString(), timeZone: tz }, end: { dateTime: end.toISOString(), timeZone: tz },
+        reminders: { useDefault: false, overrides: [{ method: 'popup', minutes: 0 }] } })
+    });
+    if (!res.ok) throw new Error('Calendar create failed: ' + res.status);
+    return (await res.json()).id;
+  } catch (e) { console.error(e); return null; }
+}
+async function deleteCalendarEvent(eventId){
+  if (!eventId || !CONFIG.googleCalendarEnabled) return;
+  try {
+    const token = await ensureGoogleToken();
+    await fetch(`https://www.googleapis.com/calendar/v3/calendars/primary/events/${encodeURIComponent(eventId)}`, { method:'DELETE', headers: { Authorization: 'Bearer ' + token } });
+  } catch (e) { console.error(e); }
+}
+let syncing = false;
+async function syncTodayCalendar(){
+  if (!CONFIG.googleCalendarEnabled || syncing) return;
+  syncing = true;
+  try {
+    for (const task of computeDay(todayStr())) {
+      if (task.status !== 'Pending' || !task.time) continue;
+      let log = task.logId ? logCache.find(l => l.id === task.logId) : null;
+      if (log && (log.CalendarEventId || String(log.id).startsWith('tmp'))) continue;
+      try {
+        if (!log) log = await upsertTaskLog(task, {});
+        const eventId = await createCalendarEvent(task.title, task.date, task.time);
+        if (eventId) { await atUpdate(LOG_TABLE, log.id, { CalendarEventId: eventId }); log.CalendarEventId = eventId; }
+      } catch (e) { console.error(e); }
+    }
+  } finally { syncing = false; }
+}
+
+/* ============================================================
+   NOTIFICATIONS
+   ============================================================ */
+async function toggleNotifications(){
+  if (!('Notification' in window)) { showToast('This browser doesn’t support notifications.'); return; }
+  if (!CONFIG.notifEnabled || Notification.permission !== 'granted') {
+    const perm = await Notification.requestPermission();
+    if (perm !== 'granted') { showToast('Notifications are blocked in browser settings.'); return; }
+    CONFIG.notifEnabled = true;
+  } else CONFIG.notifEnabled = false;
+  saveConfig();
+  document.getElementById('notif-switch').classList.toggle('on', CONFIG.notifEnabled);
+}
+document.getElementById('digest-time').addEventListener('change', (e) => { CONFIG.digestTime = e.target.value; saveConfig(); });
+function fireNotification(title, body, tag){
+  if (navigator.serviceWorker && navigator.serviceWorker.controller) navigator.serviceWorker.ready.then(reg => reg.showNotification(title, { body, tag, icon: 'icon-192.png' }));
+  else new Notification(title, { body, tag, icon: 'icon-192.png' });
+}
+function startReminderLoop(){ checkReminders(); setInterval(checkReminders, 30000); }
+function checkReminders(){
+  if (!CONFIG.notifEnabled || !('Notification' in window) || Notification.permission !== 'granted') return;
+  const now = new Date(), today = todayStr();
+  const hhmm = String(now.getHours()).padStart(2,'0') + ':' + String(now.getMinutes()).padStart(2,'0');
+  const tasks = computeDay(today);
+  const mark = (k) => { notifiedToday[k] = true; writeLS('at_notified', JSON.stringify(notifiedToday)); };
+  tasks.forEach(t => {
+    const key = today + '|' + t.id + '|' + t.time;
+    if (t.status === 'Pending' && t.time === hhmm && !notifiedToday[key]) { fireNotification('Due now', t.title, key); mark(key); }
+  });
+  const digestKey = today + '|digest';
+  if (hhmm === (CONFIG.digestTime || '07:30') && !notifiedToday[digestKey]) {
+    const pending = tasks.filter(t => t.status === 'Pending').length;
+    const floating = computeAnytime(ds(mondayOf(now))).filter(t => t.status === 'Pending').length;
+    if (pending || floating) fireNotification('Today', `${pending} thing${pending === 1 ? '' : 's'} today` + (floating ? `, ${floating} anytime this week.` : '.'), digestKey);
+    mark(digestKey);
+  }
+  // prune old keys
+  Object.keys(notifiedToday).forEach(k => { if (!k.startsWith(today)) delete notifiedToday[k]; });
+}
+
+/* ============================================================
+   TOAST & OFFLINE QUEUE
+   ============================================================ */
+let toastTimer;
+function showToast(msg, actionLabel, actionFn){
+  const el = document.getElementById('toast');
+  el.textContent = msg;
+  if (actionLabel && actionFn) {
+    const b = document.createElement('button');
+    b.textContent = actionLabel;
+    b.onclick = () => { el.style.display = 'none'; actionFn(); };
+    el.appendChild(b);
+  }
+  el.style.display = 'block';
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(() => { el.style.display = 'none'; }, actionLabel ? 5000 : Math.max(2400, msg.length * 45));
+}
+function queueCreate(fields){ offlineQueue.push({ table: LOG_TABLE, fields, ts: Date.now() }); writeLS('at_queue', JSON.stringify(offlineQueue)); }
+async function flushQueue(){
+  if (!offlineQueue.length) return;
+  const pending = offlineQueue.slice(), failed = [];
+  for (const item of pending) {
+    try {
+      const rec = await atCreate(item.table, item.fields);
+      if (item.table === LOG_TABLE) logCache.push({ id: rec.id, ...rec.fields });
+      else templates.push(toTemplate(rec));
+    } catch (e) { failed.push(item); }
+  }
+  offlineQueue = failed;
+  writeLS('at_queue', JSON.stringify(offlineQueue));
+  const n = pending.length - failed.length;
+  if (n) { render(); showToast(`Synced ${n} queued task${n === 1 ? '' : 's'}.`); }
+}
+</script>
 </body>
 </html>
