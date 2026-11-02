@@ -1,15 +1,25 @@
 {
   "name": "Do It",
   "short_name": "Do It",
-  "description": "Personal accountability tracker",
-  "start_url": "./accountability-tracker-v4.html",
+  "description": "Week-at-a-glance to-do list with repeating tasks",
+  "start_url": "./",
   "scope": "./",
   "display": "standalone",
-  "background_color": "#1B1D21",
-  "theme_color": "#1B1D21",
-  "orientation": "portrait",
+  "background_color": "#F7F6F3",
+  "theme_color": "#F7F6F3",
+  "orientation": "any",
   "icons": [
-    { "src": "icon-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any maskable" },
-    { "src": "icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any maskable" }
+    {
+      "src": "icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
   ]
 }
